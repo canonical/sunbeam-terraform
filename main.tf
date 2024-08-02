@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.11.0"
+      version = "= 0.13.0"
     }
   }
 }
@@ -28,20 +28,20 @@ provider "juju" {}
 
 locals {
   mysql-services = {
-    keystone  = var.many-mysql ? lookup(var.mysql-config-map, "keystone", {}) : null,
-    glance    = var.many-mysql ? lookup(var.mysql-config-map, "glance", {}) : null,
-    nova      = var.many-mysql ? lookup(var.mysql-config-map, "nova", {}) : null,
-    horizon   = var.many-mysql ? lookup(var.mysql-config-map, "horizon", {}) : null,
-    neutron   = var.many-mysql ? lookup(var.mysql-config-map, "neutron", {}) : null,
-    placement = var.many-mysql ? lookup(var.mysql-config-map, "placement", {}) : null,
-    cinder    = var.many-mysql ? lookup(var.mysql-config-map, "cinder", {}) : null,
-    heat      = var.many-mysql && var.enable-heat ? lookup(var.mysql-config-map, "heat", {}) : null,
-    magnum    = var.many-mysql && var.enable-magnum ? lookup(var.mysql-config-map, "magnum", {}) : null,
-    aodh      = var.many-mysql && var.enable-telemetry ? lookup(var.mysql-config-map, "aodh", {}) : null,
-    gnocchi   = var.many-mysql && var.enable-telemetry ? lookup(var.mysql-config-map, "gnocchi", {}) : null,
-    octavia   = var.many-mysql && var.enable-octavia ? lookup(var.mysql-config-map, "octavia", {}) : null,
-    designate = var.many-mysql && var.enable-designate ? lookup(var.mysql-config-map, "designate", {}) : null,
-    barbican  = var.many-mysql && var.enable-barbican ? lookup(var.mysql-config-map, "barbican", {}) : null,
+    keystone  = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "keystone", {}), "storages" : lookup(var.mysql-storage-map, "keystone", {}) } : null,
+    glance    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "glance", {}), "storages" : lookup(var.mysql-storage-map, "glance", {}) } : null,
+    nova      = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "nova", {}), "storages" : lookup(var.mysql-storage-map, "nova", {}) } : null,
+    neutron   = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "neutron", {}), "storages" : lookup(var.mysql-storage-map, "neutron", {}) } : null,
+    placement = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "placement", {}), "storages" : lookup(var.mysql-storage-map, "placement", {}) } : null,
+    cinder    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "cinder", {}), "storages" : lookup(var.mysql-storage-map, "cinder", {}) } : null,
+    horizon   = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "horizon", {}), "storages" : lookup(var.mysql-storage-map, "horizon", {}) } : null,
+    heat      = var.many-mysql && var.enable-heat ? { "configs" : lookup(var.mysql-config-map, "heat", {}), "storages" : lookup(var.mysql-storage-map, "heat", {}) } : null,
+    magnum    = var.many-mysql && var.enable-magnum ? { "configs" : lookup(var.mysql-config-map, "magnum", {}), "storages" : lookup(var.mysql-storage-map, "magnum", {}) } : null,
+    aodh      = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "aodh", {}), "storages" : lookup(var.mysql-storage-map, "aodh", {}) } : null,
+    gnocchi   = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "gnocchi", {}), "storages" : lookup(var.mysql-storage-map, "gnocchi", {}) } : null,
+    octavia   = var.many-mysql && var.enable-octavia ? { "configs" : lookup(var.mysql-config-map, "octavia", {}), "storages" : lookup(var.mysql-storage-map, "octavia", {}) } : null,
+    designate = var.many-mysql && var.enable-designate ? { "configs" : lookup(var.mysql-config-map, "designate", {}), "storages" : lookup(var.mysql-storage-map, "designate", {}) } : null,
+    barbican  = var.many-mysql && var.enable-barbican ? { "configs" : lookup(var.mysql-config-map, "barbican", {}), "storages" : lookup(var.mysql-storage-map, "barbican", {}) } : null,
   }
   single-mysql = "mysql"
   mysql = {
@@ -76,6 +76,7 @@ module "single-mysql" {
   revision              = var.mysql-revision
   scale                 = var.ha-scale
   resource-configs      = var.mysql-config
+  resource-storages     = var.mysql-storage
   grafana-dashboard-app = local.grafana-agent-name
   metrics-endpoint-app  = local.grafana-agent-name
   logging-app           = local.grafana-agent-name
@@ -89,19 +90,21 @@ module "many-mysql" {
   channel               = var.mysql-channel
   revision              = var.mysql-revision
   scale                 = var.ha-scale
-  resource-configs      = merge(var.mysql-config, each.value)
+  resource-configs      = merge(var.mysql-config, each.value.configs)
+  resource-storages     = merge(var.mysql-storage, each.value.storages)
   grafana-dashboard-app = local.grafana-agent-name
   metrics-endpoint-app  = local.grafana-agent-name
   logging-app           = local.grafana-agent-name
 }
 
 module "rabbitmq" {
-  source           = "./modules/rabbitmq"
-  model            = juju_model.sunbeam.name
-  scale            = var.ha-scale
-  channel          = var.rabbitmq-channel
-  revision         = var.rabbitmq-revision
-  resource-configs = var.rabbitmq-config
+  source            = "./modules/rabbitmq"
+  model             = juju_model.sunbeam.name
+  scale             = var.ha-scale
+  channel           = var.rabbitmq-channel
+  revision          = var.rabbitmq-revision
+  resource-configs  = var.rabbitmq-config
+  resource-storages = var.rabbitmq-storage
 }
 
 module "glance" {
@@ -127,6 +130,7 @@ module "glance" {
     enable-telemetry-notifications = var.enable-telemetry
     region                         = var.region
   })
+  resource-storages = var.glance-storage
 }
 
 module "keystone" {
@@ -148,6 +152,7 @@ module "keystone" {
     enable-telemetry-notifications = var.enable-telemetry
     region                         = var.region
   })
+  resource-storages = var.keystone-storage
 }
 
 module "nova" {
@@ -275,8 +280,9 @@ resource "juju_application" "traefik" {
     revision = var.traefik-revision
   }
 
-  config = var.traefik-config
-  units  = var.ingress-scale
+  config             = var.traefik-config
+  storage_directives = var.traefik-storage
+  units              = var.ingress-scale
 }
 
 resource "juju_integration" "traefik-internal-to-metrics-endpoint" {
@@ -335,8 +341,9 @@ resource "juju_application" "traefik-public" {
     revision = var.traefik-revision
   }
 
-  config = var.traefik-config
-  units  = var.ingress-scale
+  config             = var.traefik-config
+  storage_directives = var.traefik-storage
+  units              = var.ingress-scale
 }
 
 resource "juju_integration" "traefik-public-to-metrics-endpoint" {
@@ -396,8 +403,9 @@ resource "juju_application" "traefik-rgw" {
     revision = var.traefik-revision
   }
 
-  config = var.traefik-config
-  units  = var.ingress-scale
+  config             = var.traefik-config
+  storage_directives = var.traefik-storage
+  units              = var.ingress-scale
 }
 
 resource "juju_offer" "ingress-rgw-offer" {
@@ -481,6 +489,7 @@ module "ovn" {
   ca                     = juju_application.certificate-authority.name
   resource-configs       = var.ovn-central-config
   relay-resource-configs = var.ovn-relay-config
+  resource-storages      = var.ovn-central-storage
   logging-app            = local.grafana-agent-name
 }
 
@@ -943,6 +952,7 @@ module "octavia" {
   resource-configs = merge(var.octavia-config, {
     region = var.region
   })
+  resource-storages = var.octavia-storage
 }
 
 # juju integrate ovn-central octavia
@@ -1072,8 +1082,9 @@ resource "juju_application" "vault" {
     revision = var.vault-revision
   }
 
-  config = var.vault-config
-  units  = 1
+  config             = var.vault-config
+  storage_directives = var.vault-storage
+  units              = 1
 }
 
 module "barbican" {

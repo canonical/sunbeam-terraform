@@ -31,6 +31,12 @@ variable "resource-configs" {
   default     = {}
 }
 
+variable "resource-storages" {
+  description = "Operator storage directives for OVN Central"
+  type        = map(string)
+  default     = {}
+}
+
 variable "scale" {
   description = "Scale of OVN central application"
   type        = number

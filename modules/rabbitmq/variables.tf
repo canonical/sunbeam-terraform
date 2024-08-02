@@ -43,7 +43,13 @@ variable "model" {
 }
 
 variable "resource-configs" {
-  description = "Configs to set for mysql"
+  description = "Configs to set for rabbitmq"
+  type        = map(string)
+  default     = {}
+}
+
+variable "resource-storages" {
+  description = "Storage directives to set for rabbitmq"
   type        = map(string)
   default     = {}
 }

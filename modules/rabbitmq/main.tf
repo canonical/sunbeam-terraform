@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.11.0"
+      version = "= 0.13.0"
     }
   }
 }
@@ -40,6 +40,8 @@ resource "juju_application" "rabbitmq" {
   config = merge(var.resource-configs, {
     minimum-replicas = var.scale > 3 ? 3 : var.scale
   })
+
+  storage_directives = var.resource-storages
 }
 
 

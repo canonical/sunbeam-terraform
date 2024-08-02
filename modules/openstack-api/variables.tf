@@ -109,6 +109,12 @@ variable "resource-configs" {
   default     = {}
 }
 
+variable "resource-storages" {
+  description = "Storage directives to set for all resources"
+  type        = map(string)
+  default     = {}
+}
+
 variable "logging-app" {
   description = "Name of application providing logging endpoint"
   type        = string

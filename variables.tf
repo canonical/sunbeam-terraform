@@ -39,8 +39,20 @@ variable "mysql-config" {
   }
 }
 
+variable "mysql-storage" {
+  description = "Storage directives for MySQL deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "mysql-config-map" {
   description = "Operator configs for specific MySQL deployment (applied on top of mysql-config for specific application)"
+  type        = map(map(string))
+  default     = {}
+}
+
+variable "mysql-storage-map" {
+  description = "Operator storage directives for specific MySQL deployment (applied on top of mysql-storage for specific application)"
   type        = map(map(string))
   default     = {}
 }
@@ -69,6 +81,12 @@ variable "traefik-config" {
   default     = {}
 }
 
+variable "traefik-storage" {
+  description = "Operator storage directives for Traefik deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "rabbitmq-channel" {
   description = "Operator channel for RabbitMQ deployment"
   type        = string
@@ -83,6 +101,12 @@ variable "rabbitmq-revision" {
 
 variable "rabbitmq-config" {
   description = "Operator configs for RabbitMQ deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "rabbitmq-storage" {
+  description = "Operator storage directives for RabbitMQ deployment"
   type        = map(string)
   default     = {}
 }
@@ -129,6 +153,12 @@ variable "ovn-central-config" {
   default     = {}
 }
 
+variable "ovn-central-storage" {
+  description = "Operator storage directives for OVN Central deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "ovn-relay-channel" {
   description = "Operator channel for OVN Relay deployment"
   type        = string
@@ -165,6 +195,12 @@ variable "keystone-config" {
   default     = {}
 }
 
+variable "keystone-storage" {
+  description = "Operator storage directives for Keystone deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "glance-channel" {
   description = "Operator channel for Glance deployment"
   type        = string
@@ -179,6 +215,12 @@ variable "glance-revision" {
 
 variable "glance-config" {
   description = "Operator config for Glance deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "glance-storage" {
+  description = "Operator storage directives for Glance deployment"
   type        = map(string)
   default     = {}
 }
@@ -503,6 +545,12 @@ variable "octavia-config" {
   default     = {}
 }
 
+variable "octavia-storage" {
+  description = "Operator storage directives for Octavia deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable-designate" {
   description = "Enable OpenStack Designate service"
   type        = bool
@@ -575,6 +623,12 @@ variable "vault-revision" {
 
 variable "vault-config" {
   description = "Operator config for Vault deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "vault-storage" {
+  description = "Operator storage directives for Vault deployment"
   type        = map(string)
   default     = {}
 }

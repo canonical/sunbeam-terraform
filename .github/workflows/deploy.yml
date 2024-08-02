@@ -24,10 +24,9 @@ jobs:
           sudo snap install --classic juju-wait
       - name: Apply terraform
         run: |
-          echo '{"credential": "microk8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github."}' > terraform.tfvars.json
+          echo '{"credential": "microk8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github.", "mysql-storage": { "database": "12G" }, "keystone-storage": { "fernet-keys": "6M", "credential-keys": "8M" } }' > terraform.tfvars.json
           terraform init
           terraform apply -auto-approve -var-file=channels/edge.tfvars
-          juju model-config -m openstack automatically-retry-hooks=true
           juju-wait -vw -m openstack -t 3600 -x cinder-ceph -r 3
       - name: Collect juju status
         if: always()

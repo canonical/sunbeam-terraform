@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.11.0"
+      version = "= 0.13.0"
     }
   }
 }
@@ -34,8 +34,9 @@ resource "juju_application" "ovn-central" {
     revision = var.revision
   }
 
-  config = var.resource-configs
-  units  = var.scale
+  config             = var.resource-configs
+  storage_directives = var.resource-storages
+  units              = var.scale
 }
 
 resource "juju_application" "ovn-relay" {
