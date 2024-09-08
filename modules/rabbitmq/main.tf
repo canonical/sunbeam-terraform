@@ -48,3 +48,19 @@ resource "juju_offer" "rabbitmq-offer" {
   application_name = juju_application.rabbitmq.name
   endpoint         = "amqp"
 }
+
+
+resource "juju_integration" "rabbitmq-to-logging" {
+  count = (var.logging-app != null) ? 1 : 0
+  model = var.model
+
+  application {
+    name     = juju_application.rabbitmq.name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = var.logging-app
+    endpoint = "logging-provider"
+  }
+}
