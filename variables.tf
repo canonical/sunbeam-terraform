@@ -509,6 +509,30 @@ variable "openstack-exporter-config" {
   default     = {}
 }
 
+variable "enable-masakari" {
+  description = "Enable OpenStack Masakari service"
+  type        = bool
+  default     = false
+}
+
+variable "masakari-channel" {
+  description = "Operator channel for Masakari deployment"
+  type        = string
+  default     = null
+}
+
+variable "masakari-revision" {
+  description = "Operator channel revision for Masakari deployment"
+  type        = number
+  default     = null
+}
+
+variable "masakari-config" {
+  description = "Operator config for Masakari deployment"
+  type        = map(string)
+  default     = {}
+}
+
 variable "receive-remote-write-offer-url" {
   description = "Offer URL from prometheus-k8s:receive-remote-write application"
   type        = string

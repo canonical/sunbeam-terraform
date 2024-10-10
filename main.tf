@@ -43,6 +43,7 @@ locals {
     designate = var.many-mysql && var.enable-designate ? { "configs" : lookup(var.mysql-config-map, "designate", {}), "storages" : lookup(var.mysql-storage-map, "designate", {}) } : null,
     barbican  = var.many-mysql && var.enable-barbican ? { "configs" : lookup(var.mysql-config-map, "barbican", {}), "storages" : lookup(var.mysql-storage-map, "barbican", {}) } : null,
     watcher   = var.many-mysql && var.enable-watcher ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
+    masakari  = var.many-mysql && var.enable-masakari ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
   }
   single-mysql = "mysql"
   mysql = {
@@ -1545,4 +1546,79 @@ module "consul-storage" {
   revision          = var.consul-revision
   resource-configs  = var.consul-config
   resource-storages = var.consul-storage
+}
+
+module "masakari" {
+  depends_on           = [module.single-mysql, module.many-mysql]
+  count                = var.enable-masakari ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "masakari-k8s"
+  name                 = "masakari"
+  model                = juju_model.sunbeam.name
+  channel              = var.masakari-channel == null ? var.openstack-channel : var.masakari-channel
+  revision             = var.masakari-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["masakari"]
+  keystone             = module.keystone.name
+  keystone-cacerts     = module.keystone.name
+  ingress-internal     = juju_application.traefik.name
+  ingress-public       = juju_application.traefik-public.name
+  scale                = var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.masakari-config, {
+    region = var.region
+  })
+}
+
+resource "juju_integration" "masakari-to-consul-management" {
+  count = (var.enable-masakari && var.enable-consul-management) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.masakari[count.index].name
+    endpoint = "consul-management"
+  }
+
+  application {
+    name     = module.consul-management[count.index].name
+    endpoint = "consul-cluster"
+  }
+}
+
+resource "juju_integration" "masakari-to-consul-tenant" {
+  count = (var.enable-masakari && var.enable-consul-tenant) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.masakari[count.index].name
+    endpoint = "consul-tenant"
+  }
+
+  application {
+    name     = module.consul-tenant[count.index].name
+    endpoint = "consul-cluster"
+  }
+}
+
+resource "juju_integration" "masakari-to-consul-storage" {
+  count = (var.enable-masakari && var.enable-consul-storage) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.masakari[count.index].name
+    endpoint = "consul-storage"
+  }
+
+  application {
+    name     = module.consul-storage[count.index].name
+    endpoint = "consul-cluster"
+  }
+}
+
+resource "juju_offer" "masakari-offer" {
+  count            = var.enable-masakari ? 1 : 0
+  model            = juju_model.sunbeam.name
+  application_name = module.masakari[count.index].name
+  endpoint         = "masakari-service"
 }

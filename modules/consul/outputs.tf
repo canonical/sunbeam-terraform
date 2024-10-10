@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+output "name" {
+  description = "Name of the deployed Consul resource"
+  value       = juju_application.consul.name
+}
+
 output "consul-cluster-offer-url" {
   description = "URL of the Consul offer"
   value       = juju_offer.consul-cluster-offer.url

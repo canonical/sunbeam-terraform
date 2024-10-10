@@ -79,3 +79,8 @@ output "consul-storage-cluster-offer-url" {
   description = "URL of the Consul Storage cluster offer"
   value       = one(module.consul-storage[*].consul-cluster-offer-url)
 }
+
+output "masakari-offer-url" {
+  description = "URL of the masakari offer"
+  value       = one(juju_offer.masakari-offer[*].url)
+}

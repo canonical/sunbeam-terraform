@@ -16,7 +16,7 @@ jobs:
         with:
           provider: microk8s
           channel: 1.28-strict/stable
-          juju-channel: 3.4/stable
+          juju-channel: 3.5/stable
           microk8s-addons: hostpath-storage dns rbac metallb:10.64.140.40-10.64.140.49
       - name: Install dependencies
         run: |
@@ -24,7 +24,7 @@ jobs:
           sudo snap install --classic juju-wait
       - name: Apply terraform
         run: |
-          echo '{"credential": "microk8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github.", "enable-watcher": true, "enable-consul-management": true, "enable-consul-tenant": true, "enable-consul-storage": true, "mysql-storage": { "database": "12G" }, "keystone-storage": { "fernet-keys": "6M", "credential-keys": "8M" } }' > terraform.tfvars.json
+          echo '{"credential": "microk8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github.", "enable-watcher": true, "enable-consul-management": true, "enable-consul-tenant": true, "enable-consul-storage": true, "enable-masakari": true, "mysql-storage": { "database": "12G" }, "keystone-storage": { "fernet-keys": "6M", "credential-keys": "8M" } }' > terraform.tfvars.json
           terraform init
           terraform apply -auto-approve -var-file=channels/edge.tfvars
           juju model-config -m openstack automatically-retry-hooks=true
