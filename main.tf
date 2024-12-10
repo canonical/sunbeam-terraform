@@ -1089,7 +1089,7 @@ resource "juju_application" "vault" {
 
   config             = var.vault-config
   storage_directives = var.vault-storage
-  units              = 1
+  units              = var.ha-scale
 }
 
 module "barbican" {
