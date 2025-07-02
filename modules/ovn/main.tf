@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.17.1"
+      version = "= 0.20.0"
     }
   }
 }
@@ -136,5 +136,5 @@ resource "juju_offer" "ovn-relay-offer" {
   count            = var.relay != "" ? 1 : 0
   model            = var.model
   application_name = juju_application.ovn-relay[count.index].name
-  endpoint         = "ovsdb-cms-relay"
+  endpoints        = ["ovsdb-cms-relay"]
 }

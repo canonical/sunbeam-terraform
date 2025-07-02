@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.17.1"
+      version = "= 0.20.0"
     }
   }
 }
@@ -420,7 +420,7 @@ resource "juju_offer" "ingress-rgw-offer" {
   count            = var.enable-ceph ? 1 : 0
   model            = juju_model.sunbeam.name
   application_name = juju_application.traefik-rgw[count.index].name
-  endpoint         = "traefik-route"
+  endpoints        = ["traefik-route"]
 }
 
 resource "juju_integration" "traefik-rgw-to-metrics-endpoint" {
@@ -621,7 +621,7 @@ resource "juju_offer" "cinder-volume-database-offer" {
   count            = var.enable-cinder-volume ? 1 : 0
   model            = juju_model.sunbeam.name
   application_name = juju_application.cinder-volume-mysql-router[count.index].name
-  endpoint         = "database"
+  endpoints        = ["database"]
 }
 
 resource "juju_integration" "cinder-to-cinder-volume" {
@@ -641,7 +641,7 @@ resource "juju_integration" "cinder-to-cinder-volume" {
 resource "juju_offer" "ca-offer" {
   model            = juju_model.sunbeam.name
   application_name = juju_application.certificate-authority.name
-  endpoint         = "certificates"
+  endpoints        = ["certificates"]
 }
 
 module "heat" {
@@ -852,7 +852,7 @@ resource "juju_offer" "ceilometer-offer" {
   count            = var.enable-telemetry ? 1 : 0
   model            = juju_model.sunbeam.name
   application_name = juju_application.ceilometer[count.index].name
-  endpoint         = "ceilometer-service"
+  endpoints        = ["ceilometer-service"]
 }
 
 resource "juju_application" "openstack-exporter" {
@@ -1393,6 +1393,7 @@ resource "juju_integration" "grafana-agent-to-receive-remote-write" {
 
   application {
     offer_url = var.receive-remote-write-offer-url
+    endpoint  = "receive-remote-write"
   }
 }
 
@@ -1647,5 +1648,5 @@ resource "juju_offer" "masakari-offer" {
   count            = var.enable-masakari ? 1 : 0
   model            = juju_model.sunbeam.name
   application_name = module.masakari[count.index].name
-  endpoint         = "masakari-service"
+  endpoints        = ["masakari-service"]
 }

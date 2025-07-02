@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.17.1"
+      version = "= 0.20.0"
     }
   }
 }
@@ -49,7 +49,7 @@ resource "juju_application" "rabbitmq" {
 resource "juju_offer" "rabbitmq-offer" {
   model            = var.model
   application_name = juju_application.rabbitmq.name
-  endpoint         = "amqp"
+  endpoints        = ["amqp"]
 }
 
 

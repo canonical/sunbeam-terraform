@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.17.1"
+      version = "= 0.20.0"
     }
   }
 }
@@ -298,11 +298,15 @@ resource "juju_integration" "service-to-logging" {
   }
 }
 
+# As a workaroud for bug
+# https://github.com/juju/terraform-provider-juju/issues/787,
+# the endpoints for keystone application are not
+# exposed as single offer URL
 resource "juju_offer" "keystone-offer" {
   count            = var.name == "keystone" ? 1 : 0
   model            = var.model
   application_name = juju_application.service.name
-  endpoint         = "identity-credentials"
+  endpoints        = ["identity-credentials"]
   name             = "keystone-credentials"
 }
 
@@ -310,7 +314,7 @@ resource "juju_offer" "keystone-endpoints-offer" {
   count            = var.name == "keystone" ? 1 : 0
   model            = var.model
   application_name = juju_application.service.name
-  endpoint         = "identity-service"
+  endpoints        = ["identity-service"]
   name             = "keystone-endpoints"
 }
 
@@ -318,7 +322,7 @@ resource "juju_offer" "cert-distributor-offer" {
   count            = var.name == "keystone" ? 1 : 0
   model            = var.model
   application_name = juju_application.service.name
-  endpoint         = "send-ca-cert"
+  endpoints        = ["send-ca-cert"]
   name             = "cert-distributor"
 }
 
@@ -326,5 +330,5 @@ resource "juju_offer" "nova-offer" {
   count            = var.name == "nova" ? 1 : 0
   model            = var.model
   application_name = juju_application.service.name
-  endpoint         = "nova-service"
+  endpoints        = ["nova-service"]
 }
