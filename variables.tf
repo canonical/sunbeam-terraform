@@ -921,12 +921,6 @@ variable "region" {
   default     = "RegionOne"
 }
 
-variable "keystone-to-trusted-dashboard" {
-  description = "Enable trusted dashboard"
-  type        = bool
-  default     = false
-}
-
 variable "kratos-idp-channel" {
   description = "Operator channel for Kratos external integrator"
   type        = string

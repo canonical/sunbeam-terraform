@@ -1667,7 +1667,7 @@ resource "juju_offer" "masakari-offer" {
 }
 
 resource "juju_integration" "keystone-to-trusted-dashboard-endpoint" {
-  count = var.keystone-to-trusted-dashboard ? 1 : 0
+  count = 1
   model = juju_model.sunbeam.name
 
   application {
