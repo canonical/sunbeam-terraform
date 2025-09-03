@@ -1255,6 +1255,47 @@ resource "juju_integration" "manila-cephfs-to-ceph" {
   }
 }
 
+# manila-data MySQL router
+resource "juju_application" "manila-data-mysql-router" {
+  count = var.enable-manila ? 1 : 0
+  name  = "manila-data-mysql-router"
+  trust = true
+  model = juju_model.sunbeam.name
+
+  charm {
+    name    = "mysql-router-k8s"
+    channel = var.mysql-router-channel
+  }
+
+  units = var.ha-scale
+  config = {
+    "expose-external" = "loadbalancer"
+  }
+}
+
+resource "juju_integration" "manila-data-mysql-router-to-mysql" {
+  count      = length(juju_application.manila-data-mysql-router)
+  depends_on = [module.single-mysql, module.many-mysql]
+  model      = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.manila-data-mysql-router[count.index].name
+    endpoint = "backend-database"
+  }
+
+  application {
+    name     = local.mysql["manila"]
+    endpoint = "database"
+  }
+}
+
+resource "juju_offer" "manila-data-database-offer" {
+  count            = var.enable-manila ? 1 : 0
+  model            = juju_model.sunbeam.name
+  application_name = juju_application.manila-data-mysql-router[count.index].name
+  endpoints        = ["database"]
+}
+
 resource "juju_application" "ldap-apps" {
   for_each = var.ldap-apps
   name     = "keystone-ldap-${each.key}"
