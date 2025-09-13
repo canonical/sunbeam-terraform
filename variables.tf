@@ -1036,3 +1036,26 @@ variable "saml-x509-keypair" {
   default     = ""
 }
 
+variable "enable-cloudkitty" {
+  description = "Enable Openstack Rating service"
+  type        = bool
+  default     = false
+}
+
+variable "cloudkitty-channel" {
+  description = "Operator channel for Cloudkitty deployment"
+  type        = string
+  default     = null
+}
+
+variable "cloudkitty-revision" {
+  description = "Operator channel revision for Cloudkitty deployment"
+  type        = number
+  default     = null
+}
+
+variable "cloudkitty-config" {
+  description = "Operator config for Cloudkitty deployment"
+  type        = map(string)
+  default     = {}
+}
