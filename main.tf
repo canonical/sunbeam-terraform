@@ -28,23 +28,24 @@ provider "juju" {}
 
 locals {
   mysql-services = {
-    keystone  = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "keystone", {}), "storages" : lookup(var.mysql-storage-map, "keystone", {}) } : null,
-    glance    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "glance", {}), "storages" : lookup(var.mysql-storage-map, "glance", {}) } : null,
-    nova      = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "nova", {}), "storages" : lookup(var.mysql-storage-map, "nova", {}) } : null,
-    neutron   = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "neutron", {}), "storages" : lookup(var.mysql-storage-map, "neutron", {}) } : null,
-    placement = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "placement", {}), "storages" : lookup(var.mysql-storage-map, "placement", {}) } : null,
-    cinder    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "cinder", {}), "storages" : lookup(var.mysql-storage-map, "cinder", {}) } : null,
-    horizon   = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "horizon", {}), "storages" : lookup(var.mysql-storage-map, "horizon", {}) } : null,
-    heat      = var.many-mysql && var.enable-heat ? { "configs" : lookup(var.mysql-config-map, "heat", {}), "storages" : lookup(var.mysql-storage-map, "heat", {}) } : null,
-    magnum    = var.many-mysql && var.enable-magnum ? { "configs" : lookup(var.mysql-config-map, "magnum", {}), "storages" : lookup(var.mysql-storage-map, "magnum", {}) } : null,
-    manila    = var.many-mysql && var.enable-manila ? { "configs" : lookup(var.mysql-config-map, "manila", {}), "storages" : lookup(var.mysql-storage-map, "manila", {}) } : null,
-    aodh      = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "aodh", {}), "storages" : lookup(var.mysql-storage-map, "aodh", {}) } : null,
-    gnocchi   = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "gnocchi", {}), "storages" : lookup(var.mysql-storage-map, "gnocchi", {}) } : null,
-    octavia   = var.many-mysql && var.enable-octavia ? { "configs" : lookup(var.mysql-config-map, "octavia", {}), "storages" : lookup(var.mysql-storage-map, "octavia", {}) } : null,
-    designate = var.many-mysql && var.enable-designate ? { "configs" : lookup(var.mysql-config-map, "designate", {}), "storages" : lookup(var.mysql-storage-map, "designate", {}) } : null,
-    barbican  = var.many-mysql && var.enable-barbican ? { "configs" : lookup(var.mysql-config-map, "barbican", {}), "storages" : lookup(var.mysql-storage-map, "barbican", {}) } : null,
-    watcher   = var.many-mysql && var.enable-watcher ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
-    masakari  = var.many-mysql && var.enable-masakari ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
+    keystone   = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "keystone", {}), "storages" : lookup(var.mysql-storage-map, "keystone", {}) } : null,
+    glance     = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "glance", {}), "storages" : lookup(var.mysql-storage-map, "glance", {}) } : null,
+    nova       = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "nova", {}), "storages" : lookup(var.mysql-storage-map, "nova", {}) } : null,
+    neutron    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "neutron", {}), "storages" : lookup(var.mysql-storage-map, "neutron", {}) } : null,
+    placement  = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "placement", {}), "storages" : lookup(var.mysql-storage-map, "placement", {}) } : null,
+    cinder     = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "cinder", {}), "storages" : lookup(var.mysql-storage-map, "cinder", {}) } : null,
+    horizon    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "horizon", {}), "storages" : lookup(var.mysql-storage-map, "horizon", {}) } : null,
+    heat       = var.many-mysql && var.enable-heat ? { "configs" : lookup(var.mysql-config-map, "heat", {}), "storages" : lookup(var.mysql-storage-map, "heat", {}) } : null,
+    magnum     = var.many-mysql && var.enable-magnum ? { "configs" : lookup(var.mysql-config-map, "magnum", {}), "storages" : lookup(var.mysql-storage-map, "magnum", {}) } : null,
+    manila     = var.many-mysql && var.enable-manila ? { "configs" : lookup(var.mysql-config-map, "manila", {}), "storages" : lookup(var.mysql-storage-map, "manila", {}) } : null,
+    aodh       = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "aodh", {}), "storages" : lookup(var.mysql-storage-map, "aodh", {}) } : null,
+    gnocchi    = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "gnocchi", {}), "storages" : lookup(var.mysql-storage-map, "gnocchi", {}) } : null,
+    octavia    = var.many-mysql && var.enable-octavia ? { "configs" : lookup(var.mysql-config-map, "octavia", {}), "storages" : lookup(var.mysql-storage-map, "octavia", {}) } : null,
+    designate  = var.many-mysql && var.enable-designate ? { "configs" : lookup(var.mysql-config-map, "designate", {}), "storages" : lookup(var.mysql-storage-map, "designate", {}) } : null,
+    barbican   = var.many-mysql && var.enable-barbican ? { "configs" : lookup(var.mysql-config-map, "barbican", {}), "storages" : lookup(var.mysql-storage-map, "barbican", {}) } : null,
+    watcher    = var.many-mysql && var.enable-watcher ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
+    masakari   = var.many-mysql && var.enable-masakari ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
+    cloudkitty = var.many-mysql && var.enable-cloudkitty ? { "configs" : lookup(var.mysql-config-map, "cloudkitty", {}), "storages" : lookup(var.mysql-storage-map, "cloudkitty", {}) } : null,
   }
   single-mysql = "mysql"
   mysql = {
@@ -1792,6 +1793,44 @@ resource "juju_offer" "masakari-offer" {
   model            = juju_model.sunbeam.name
   application_name = module.masakari[count.index].name
   endpoints        = ["masakari-service"]
+}
+
+module "cloudkitty" {
+  depends_on           = [module.single-mysql, module.many-mysql]
+  count                = var.enable-cloudkitty ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "cloudkitty-k8s"
+  name                 = "cloudkitty"
+  model                = juju_model.sunbeam.name
+  channel              = var.cloudkitty-channel == null ? var.openstack-channel : var.cloudkitty-channel
+  revision             = var.cloudkitty-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["cloudkitty"]
+  keystone             = module.keystone.name
+  keystone-cacerts     = module.keystone.name
+  ingress-internal     = juju_application.traefik.name
+  ingress-public       = juju_application.traefik-public.name
+  scale                = var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.cloudkitty-config, {
+    region = var.region
+  })
+}
+
+resource "juju_integration" "cloudkitty-to-gnocchi" {
+  count = (var.enable-cloudkitty && var.enable-telemetry) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.gnocchi[count.index].name
+    endpoint = "gnocchi-service"
+  }
+
+  application {
+    name     = module.cloudkitty[count.index].name
+    endpoint = "gnocchi-db"
+  }
 }
 
 resource "juju_integration" "keystone-to-trusted-dashboard-endpoint" {
