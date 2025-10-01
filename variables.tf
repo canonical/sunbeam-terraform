@@ -1045,7 +1045,7 @@ variable "enable-cloudkitty" {
 variable "cloudkitty-channel" {
   description = "Operator channel for Cloudkitty deployment"
   type        = string
-  default     = null
+  default     = "2025.1/edge"
 }
 
 variable "cloudkitty-revision" {
