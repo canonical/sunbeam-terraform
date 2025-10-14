@@ -369,6 +369,12 @@ variable "enable-ceph-nfs" {
   default     = false
 }
 
+variable "enable-ceph-rgw-ready" {
+  description = "Enable Ceph RGW ready integration"
+  type        = bool
+  default     = false
+}
+
 variable "ceph-offer-url" {
   description = "Offer URL from microceph app"
   type        = string
@@ -379,6 +385,12 @@ variable "ceph-nfs-offer-url" {
   description = "NFS offer URL from microceph app"
   type        = string
   default     = "admin/controller.microceph-ceph-nfs"
+}
+
+variable "ceph-rgw-ready-offer-url" {
+  description = "RGW readiness offer URL from microceph app"
+  type        = string
+  default     = "admin/controller.microceph-ceph-rgw-ready"
 }
 
 variable "ceph-osd-replication-count" {
@@ -716,6 +728,67 @@ variable "barbican-revision" {
 
 variable "barbican-config" {
   description = "Operator config for Barbican deployment"
+  type        = map(string)
+  default     = {}
+}
+
+# Ironic and Ironic-related variables.
+variable "enable-ironic" {
+  description = "Enable OpenStack Ironic service"
+  type        = bool
+  default     = false
+}
+
+variable "ironic-channel" {
+  description = "Operator channel for Ironic deployment"
+  type        = string
+  default     = null
+}
+
+variable "ironic-revision" {
+  description = "Operator channel revision for Ironic deployment"
+  type        = number
+  default     = null
+}
+
+variable "ironic-config" {
+  description = "Operator config for Ironic deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "nova-ironic-channel" {
+  description = "Operator channel for Ironic nova-compute deployment"
+  type        = string
+  default     = null
+}
+
+variable "nova-ironic-revision" {
+  description = "Operator channel revision for Ironic nova-compute deployment"
+  type        = number
+  default     = null
+}
+
+variable "nova-ironic-config" {
+  description = "Operator config for Ironic nova-compute deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "ironic-conductor-channel" {
+  description = "Operator channel for Ironic Conductor deployment"
+  type        = string
+  default     = null
+}
+
+variable "ironic-conductor-revision" {
+  description = "Operator channel revision for Ironic Conductor deployment"
+  type        = number
+  default     = null
+}
+
+variable "ironic-conductor-config" {
+  description = "Operator config for Ironic Conductor deployment"
   type        = map(string)
   default     = {}
 }
