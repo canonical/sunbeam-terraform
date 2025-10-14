@@ -36,6 +36,7 @@ locals {
     cinder     = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "cinder", {}), "storages" : lookup(var.mysql-storage-map, "cinder", {}) } : null,
     horizon    = var.many-mysql ? { "configs" : lookup(var.mysql-config-map, "horizon", {}), "storages" : lookup(var.mysql-storage-map, "horizon", {}) } : null,
     heat       = var.many-mysql && var.enable-heat ? { "configs" : lookup(var.mysql-config-map, "heat", {}), "storages" : lookup(var.mysql-storage-map, "heat", {}) } : null,
+    ironic     = var.many-mysql && var.enable-ironic ? { "configs" : lookup(var.mysql-config-map, "ironic", {}), "storages" : lookup(var.mysql-storage-map, "ironic", {}) } : null,
     magnum     = var.many-mysql && var.enable-magnum ? { "configs" : lookup(var.mysql-config-map, "magnum", {}), "storages" : lookup(var.mysql-storage-map, "magnum", {}) } : null,
     manila     = var.many-mysql && var.enable-manila ? { "configs" : lookup(var.mysql-config-map, "manila", {}), "storages" : lookup(var.mysql-storage-map, "manila", {}) } : null,
     aodh       = var.many-mysql && var.enable-telemetry ? { "configs" : lookup(var.mysql-config-map, "aodh", {}), "storages" : lookup(var.mysql-storage-map, "aodh", {}) } : null,
@@ -78,6 +79,11 @@ data "juju_offer" "microceph" {
 data "juju_offer" "microceph-ceph-nfs" {
   count = var.enable-ceph-nfs ? 1 : 0
   url   = var.ceph-nfs-offer-url
+}
+
+data "juju_offer" "microceph-ceph-rgw" {
+  count = var.enable-ceph ? 1 : 0
+  url   = var.ceph-rgw-offer-url
 }
 
 data "juju_offer" "cinder-volume" {
@@ -1266,6 +1272,163 @@ resource "juju_integration" "barbican-to-vault" {
   application {
     name     = juju_application.vault[count.index].name
     endpoint = "vault-kv"
+  }
+}
+
+# Ironic feature.
+module "ironic" {
+  depends_on           = [module.single-mysql, module.many-mysql]
+  count                = var.enable-ironic ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "ironic-k8s"
+  name                 = "ironic"
+  model                = juju_model.sunbeam.name
+  channel              = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
+  revision             = var.ironic-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["ironic"]
+  keystone             = local.keystone-service-name
+  keystone-cacerts     = local.keystone-service-name
+  ingress-internal     = local.standard-internal-traefik-name
+  ingress-public       = local.standard-public-traefik-name
+  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.ironic-config, {
+    region = var.region
+  })
+}
+
+module "nova-ironic" {
+  depends_on           = [module.single-mysql, module.many-mysql]
+  count                = var.enable-ironic ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "nova-ironic-k8s"
+  name                 = "nova-ironic"
+  model                = juju_model.sunbeam.name
+  channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
+  revision             = var.nova-ironic-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["nova"]
+  keystone-credentials = local.keystone-service-name
+  ingress-internal     = ""
+  ingress-public       = ""
+  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.nova-ironic-config, {
+  })
+}
+
+module "ironic-conductor" {
+  depends_on           = [module.single-mysql, module.many-mysql]
+  count                = var.enable-ironic ? 1 : 0
+  source               = "./modules/openstack-api"
+  charm                = "ironic-conductor-k8s"
+  name                 = "ironic-conductor"
+  model                = juju_model.sunbeam.name
+  trust                = true
+  channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
+  revision             = var.ironic-conductor-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["ironic"]
+  keystone-credentials = local.keystone-service-name
+  ingress-internal     = ""
+  ingress-public       = ""
+  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.ironic-conductor-config, {
+  })
+}
+
+resource "juju_integration" "ironic-to-ingress-internal" {
+  count = (var.enable-ironic) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic[count.index].name
+    endpoint = "traefik-route-internal"
+  }
+
+  application {
+    name     = juju_application.traefik.name
+    endpoint = "traefik-route"
+  }
+}
+
+resource "juju_integration" "nova-ironic-to-ingress-internal" {
+  count = (var.enable-ironic) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.nova-ironic[count.index].name
+    endpoint = "traefik-route-internal"
+  }
+
+  application {
+    name     = juju_application.traefik.name
+    endpoint = "traefik-route"
+  }
+}
+
+resource "juju_integration" "ironic-to-nova-ironic" {
+  count = (var.enable-ironic) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic[count.index].name
+    endpoint = "ironic-api"
+  }
+
+  application {
+    name     = module.nova-ironic[count.index].name
+    endpoint = "ironic-api"
+  }
+}
+
+resource "juju_integration" "ironic-to-neutron" {
+  count = (var.enable-ironic) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic[count.index].name
+    endpoint = "ironic-api"
+  }
+
+  application {
+    name     = module.neutron.name
+    endpoint = "ironic-api"
+  }
+}
+
+# juju integrate ironic-conductor:ceph-rgw-ready microceph:ceph-rgw-ready
+resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
+  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic-conductor[count.index].name
+    endpoint = "ceph-rgw-ready"
+  }
+
+  application {
+    offer_url = data.juju_offer.microceph-ceph-rgw[count.index].url
+  }
+}
+
+# juju integrate glance:ceph-rgw-ready microceph:ceph-rgw-ready
+resource "juju_integration" "glance-to-ceph-rgw" {
+  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.glance.name
+    endpoint = "ceph-rgw-ready"
+  }
+
+  application {
+    offer_url = data.juju_offer.microceph-ceph-rgw[count.index].url
   }
 }
 
