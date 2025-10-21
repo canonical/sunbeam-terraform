@@ -787,6 +787,60 @@ variable "ironic-conductor-config" {
   default     = {}
 }
 
+variable "ironic-compute-shards" {
+  description = "Ironic nova-compute shards and their config flags"
+  type        = map(map(string))
+  default     = {}
+}
+
+variable "ironic-conductor-groups" {
+  description = "ironic-conductor groups and their config flags"
+  type        = map(map(string))
+  default     = {}
+}
+
+variable "neutron-baremetal-switch-config-channel" {
+  description = "Operator channel for the Neutron Baremetal Switch Config Charm"
+  type        = string
+  default     = null
+}
+
+variable "neutron-baremetal-switch-config-revision" {
+  description = "Operator channel revision for the Neutron Baremetal Switch Config Charm"
+  type        = number
+  default     = null
+}
+
+variable "netconf-conf-secrets" {
+  description = "Neutron Baremetal Switch Config Charm secrets"
+  type        = string
+  default     = ""
+}
+
+variable "neutron-generic-switch-config-channel" {
+  description = "Operator channel for the Neutron Generic Switch Config Charm"
+  type        = string
+  default     = null
+}
+
+variable "neutron-generic-switch-config-revision" {
+  description = "Operator channel revision for the Neutron Generic Switch Config Charm"
+  type        = number
+  default     = null
+}
+
+variable "generic-conf-secrets" {
+  description = "Neutron Generic Switch Config Charm secrets"
+  type        = string
+  default     = ""
+}
+
+variable "switch-conf-secrets" {
+  description = "Neutron Generic Switch Config Charm secrets"
+  type        = map(any)
+  default     = {}
+}
+
 variable "enable-magnum" {
   description = "Enable OpenStack Magnum service"
   type        = bool

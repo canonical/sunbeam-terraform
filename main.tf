@@ -1432,6 +1432,161 @@ resource "juju_integration" "glance-to-ceph-rgw" {
   }
 }
 
+module "nova-ironic-shards" {
+  for_each             = var.enable-ironic ? var.ironic-compute-shards : {}
+  depends_on           = [module.single-mysql, module.many-mysql]
+  source               = "./modules/openstack-api"
+  charm                = "nova-ironic-k8s"
+  name                 = "nova-ironic-${each.key}"
+  model                = juju_model.sunbeam.name
+  channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
+  revision             = var.nova-ironic-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["nova"]
+  keystone-credentials = local.keystone-service-name
+  ingress-internal     = ""
+  ingress-public       = ""
+  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs = merge(var.nova-ironic-config, {
+  })
+}
+
+resource "juju_integration" "ironic-to-nova-ironic-shards" {
+  for_each = var.enable-ironic ? var.ironic-compute-shards : {}
+  model    = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic[0].name
+    endpoint = "ironic-api"
+  }
+
+  application {
+    name     = module.nova-ironic-shards[each.key].name
+    endpoint = "ironic-api"
+  }
+}
+
+resource "juju_integration" "nova-ironic-shards-to-ingress-internal" {
+  for_each = var.enable-ironic ? var.ironic-compute-shards : {}
+  model    = juju_model.sunbeam.name
+
+  application {
+    name     = module.nova-ironic-shards[each.key].name
+    endpoint = "traefik-route-internal"
+  }
+
+  application {
+    name     = juju_application.traefik.name
+    endpoint = "traefik-route"
+  }
+}
+
+module "ironic-conductor-groups" {
+  for_each             = var.enable-ironic ? var.ironic-conductor-groups : {}
+  depends_on           = [module.single-mysql, module.many-mysql]
+  source               = "./modules/openstack-api"
+  charm                = "ironic-conductor-k8s"
+  name                 = "ironic-conductor-${each.key}"
+  model                = juju_model.sunbeam.name
+  trust                = true
+  channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
+  revision             = var.ironic-conductor-revision
+  rabbitmq             = module.rabbitmq.name
+  mysql                = local.mysql["ironic"]
+  keystone-credentials = local.keystone-service-name
+  ingress-internal     = ""
+  ingress-public       = ""
+  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel = var.mysql-router-channel
+  logging-app          = local.grafana-agent-name
+  resource-configs     = merge(var.ironic-conductor-config, each.value)
+}
+
+# juju integrate ironic-conductor-<group>:ceph-rgw-ready microceph:ceph-rgw-ready
+resource "juju_integration" "ironic-conductor-groups-to-ceph-rgw" {
+  for_each = var.enable-ironic ? var.ironic-conductor-groups : {}
+  model    = juju_model.sunbeam.name
+
+  application {
+    name     = module.ironic-conductor-groups[each.key].name
+    endpoint = "ceph-rgw"
+  }
+
+  application {
+    offer_url = data.juju_offer.microceph-ceph-rgw[0].url
+  }
+}
+
+resource "juju_application" "neutron-baremetal-switch-config" {
+  count = var.enable-ironic ? 1 : 0
+  name  = "neutron-baremetal-switch-config"
+  model = juju_model.sunbeam.name
+
+  charm {
+    name     = "neutron-baremetal-switch-config-k8s"
+    channel  = var.neutron-baremetal-switch-config-channel == null ? var.openstack-channel : var.neutron-baremetal-switch-config-channel
+    revision = var.neutron-baremetal-switch-config-revision
+    base     = "ubuntu@24.04"
+  }
+
+  # This is a config charm so 1 unit is enough
+  units = var.is-region-controller ? 0 : 1
+  config = {
+    "conf-secrets" = var.netconf-conf-secrets
+  }
+}
+
+resource "juju_application" "neutron-generic-switch-config" {
+  count = var.enable-ironic ? 1 : 0
+  name  = "neutron-generic-switch-config"
+  model = juju_model.sunbeam.name
+
+  charm {
+    name     = "neutron-generic-switch-config-k8s"
+    channel  = var.neutron-generic-switch-config-channel == null ? var.openstack-channel : var.neutron-generic-switch-config-channel
+    revision = var.neutron-generic-switch-config-revision
+    base     = "ubuntu@24.04"
+  }
+
+  # This is a config charm so 1 unit is enough
+  units = var.is-region-controller ? 0 : 1
+  config = {
+    "conf-secrets" = var.generic-conf-secrets
+  }
+}
+
+resource "juju_integration" "neutron-to-baremetal-switch-config" {
+  count = (var.enable-ironic && var.netconf-conf-secrets != "") ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.neutron.name
+    endpoint = "baremetal-switch-config"
+  }
+
+  application {
+    name     = juju_application.neutron-baremetal-switch-config[count.index].name
+    endpoint = "switch-config"
+  }
+}
+
+resource "juju_integration" "neutron-to-generic-switch-config" {
+  count = (var.enable-ironic && var.generic-conf-secrets != "") ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.neutron.name
+    endpoint = "generic-switch-config"
+  }
+
+  application {
+    name     = juju_application.neutron-generic-switch-config[count.index].name
+    endpoint = "switch-config"
+  }
+}
+
 module "magnum" {
   depends_on                            = [module.single-mysql, module.many-mysql]
   count                                 = var.enable-magnum ? 1 : 0
