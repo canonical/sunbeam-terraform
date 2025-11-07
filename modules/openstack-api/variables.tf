@@ -93,6 +93,12 @@ variable "keystone-ops" {
   default     = ""
 }
 
+variable "keystone-endpoints" {
+  description = "Keystone operator to integrate with"
+  type        = string
+  default     = ""
+}
+
 variable "keystone-cacerts" {
   description = "Keystone operator to integrate with"
   type        = string

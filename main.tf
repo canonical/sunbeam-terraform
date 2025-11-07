@@ -256,6 +256,7 @@ module "horizon" {
   external-keystone-offer-url         = var.external-keystone-offer-url
   keystone-cacerts                    = local.keystone-service-name
   external-cert-distributor-offer-url = var.external-cert-distributor-offer-url
+  keystone-endpoints                  = local.keystone-service-name
   ingress-internal                    = local.controller-internal-traefik-name
   ingress-public                      = local.controller-public-traefik-name
   scale                               = var.is-secondary-region ? 0 : var.os-api-scale

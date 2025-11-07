@@ -193,6 +193,20 @@ resource "juju_integration" "external-service-to-keystone-ops" {
   }
 }
 
+resource "juju_integration" "service-to-keystone-endpoints" {
+  for_each = var.keystone-endpoints == "" ? {} : { target = var.keystone-endpoints }
+  model    = var.model
+
+  application {
+    name     = each.value
+    endpoint = "identity-endpoints"
+  }
+
+  application {
+    name     = juju_application.service.name
+    endpoint = "identity-endpoints"
+  }
+}
 
 resource "juju_integration" "service-to-keystone-cacerts" {
   for_each = var.keystone-cacerts == "" ? {} : { target = var.keystone-cacerts }
