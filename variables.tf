@@ -369,12 +369,6 @@ variable "enable-ceph-nfs" {
   default     = false
 }
 
-variable "enable-ceph-rgw-ready" {
-  description = "Enable Ceph RGW ready integration"
-  type        = bool
-  default     = false
-}
-
 variable "ceph-offer-url" {
   description = "Offer URL from microceph app"
   type        = string
@@ -387,10 +381,10 @@ variable "ceph-nfs-offer-url" {
   default     = "admin/controller.microceph-ceph-nfs"
 }
 
-variable "ceph-rgw-ready-offer-url" {
+variable "ceph-rgw-offer-url" {
   description = "RGW readiness offer URL from microceph app"
   type        = string
-  default     = "admin/controller.microceph-ceph-rgw-ready"
+  default     = "admin/controller.microceph-ceph-rgw"
 }
 
 variable "ceph-osd-replication-count" {

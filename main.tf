@@ -81,9 +81,9 @@ data "juju_offer" "microceph-ceph-nfs" {
   url   = var.ceph-nfs-offer-url
 }
 
-data "juju_offer" "microceph-ceph-rgw-ready" {
-  count = var.enable-ceph-rgw-ready ? 1 : 0
-  url   = var.ceph-rgw-ready-offer-url
+data "juju_offer" "microceph-ceph-rgw" {
+  count = var.enable-ceph ? 1 : 0
+  url   = var.ceph-rgw-offer-url
 }
 
 data "juju_offer" "cinder-volume" {
@@ -1402,8 +1402,8 @@ resource "juju_integration" "ironic-to-neutron" {
 }
 
 # juju integrate ironic-conductor:ceph-rgw-ready microceph:ceph-rgw-ready
-resource "juju_integration" "ironic-conductor-to-ceph-rgw-ready" {
-  count = var.enable-ironic && var.enable-ceph-rgw-ready ? length(data.juju_offer.microceph-ceph-rgw-ready) : 0
+resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
+  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
   model = juju_model.sunbeam.name
 
   application {
@@ -1412,13 +1412,13 @@ resource "juju_integration" "ironic-conductor-to-ceph-rgw-ready" {
   }
 
   application {
-    offer_url = data.juju_offer.microceph-ceph-rgw-ready[count.index].url
+    offer_url = data.juju_offer.microceph-ceph-rgw[count.index].url
   }
 }
 
 # juju integrate glance:ceph-rgw-ready microceph:ceph-rgw-ready
-resource "juju_integration" "glance-to-ceph-rgw-ready" {
-  count = var.enable-ironic && var.enable-ceph-rgw-ready ? length(data.juju_offer.microceph-ceph-rgw-ready) : 0
+resource "juju_integration" "glance-to-ceph-rgw" {
+  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
   model = juju_model.sunbeam.name
 
   application {
@@ -1427,7 +1427,7 @@ resource "juju_integration" "glance-to-ceph-rgw-ready" {
   }
 
   application {
-    offer_url = data.juju_offer.microceph-ceph-rgw-ready[count.index].url
+    offer_url = data.juju_offer.microceph-ceph-rgw[count.index].url
   }
 }
 
