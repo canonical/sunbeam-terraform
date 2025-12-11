@@ -1313,7 +1313,7 @@ module "nova-ironic" {
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  scale                = var.is-region-controller ? 0 : 1
   mysql-router-channel = var.mysql-router-channel
   logging-app          = local.grafana-agent-name
   resource-configs = merge(var.nova-ironic-config, {
@@ -1446,7 +1446,7 @@ module "nova-ironic-shards" {
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
+  scale                = var.is-region-controller ? 0 : 1
   mysql-router-channel = var.mysql-router-channel
   logging-app          = local.grafana-agent-name
   resource-configs = merge(var.nova-ironic-config, {
