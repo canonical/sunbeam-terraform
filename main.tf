@@ -86,11 +86,6 @@ data "juju_offer" "microceph-ceph-rgw" {
   url   = var.ceph-rgw-offer-url
 }
 
-data "juju_offer" "cinder-volume" {
-  count = var.enable-cinder-volume ? 1 : 0
-  url   = var.cinder-volume-offer-url
-}
-
 resource "juju_model" "sunbeam" {
   name = var.model
 
@@ -680,8 +675,15 @@ resource "juju_offer" "cinder-volume-database-offer" {
   endpoints        = ["database"]
 }
 
+locals {
+  # Fallback on single URL to support backward compatibility
+  # Should be removed when 2026.1 hits.
+  cinder_volume_offer_urls = var.enable-cinder-volume ? (length(var.cinder-volume-offer-urls) > 0 ? var.cinder-volume-offer-urls : [var.cinder-volume-offer-url]) : []
+}
+
 resource "juju_integration" "cinder-to-cinder-volume" {
-  count = length(data.juju_offer.cinder-volume)
+  # Using count for backward compatibility
+  count = length(local.cinder_volume_offer_urls)
   model = juju_model.sunbeam.name
 
   application {
@@ -690,7 +692,7 @@ resource "juju_integration" "cinder-to-cinder-volume" {
   }
 
   application {
-    offer_url = data.juju_offer.cinder-volume[count.index].url
+    offer_url = local.cinder_volume_offer_urls[count.index]
   }
 }
 
