@@ -415,10 +415,17 @@ variable "is-secondary-region" {
   default     = false
 }
 
+# Deprecated in favor of cinder-volume-offer-urls
 variable "cinder-volume-offer-url" {
   description = "Offer URL from cinder-volume app"
   type        = string
   default     = "admin/controller.cinder-volume"
+}
+
+variable "cinder-volume-offer-urls" {
+  description = "List of offer URLS from cinder-volume apps"
+  type        = list(string)
+  default     = []
 }
 
 variable "ha-scale" {
