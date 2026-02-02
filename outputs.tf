@@ -42,7 +42,7 @@ output "rabbitmq-offer-url" {
 
 output "ovn-relay-offer-url" {
   description = "URL of the ovn relay offer"
-  value       = one(module.ovn.ovn-relay-offer-url[*])
+  value       = try(one(module.ovn[0].ovn-relay-offer-url[*]), null)
 }
 
 output "ceilometer-offer-url" {
