@@ -69,6 +69,7 @@ locals {
   # such as Keystone and Horizon.
   controller-internal-traefik-name = var.is-secondary-region ? "" : "traefik"
   controller-public-traefik-name   = var.is-secondary-region ? "" : "traefik-public"
+  is-ovn-external                  = var.external-ovsdb-cms-offer-url != null && var.external-ovsdb-cms-offer-url != ""
 }
 
 data "juju_offer" "microceph" {
@@ -530,7 +531,13 @@ resource "juju_application" "certificate-authority" {
   })
 }
 
+moved {
+  from = module.ovn
+  to   = module.ovn[0]
+}
+
 module "ovn" {
+  count                  = local.is-ovn-external ? 0 : 1
   source                 = "./modules/ovn"
   model                  = juju_model.sunbeam.name
   channel                = var.ovn-central-channel == null ? var.ovn-channel : var.ovn-central-channel
@@ -550,11 +557,26 @@ module "ovn" {
 # juju integrate ovn-central neutron
 resource "juju_integration" "ovn-central-to-neutron" {
   model = juju_model.sunbeam.name
-  count = var.is-region-controller ? 0 : 1
+  count = var.is-region-controller || local.is-ovn-external ? 0 : 1
 
   application {
-    name     = module.ovn.name
+    name     = module.ovn[0].name
     endpoint = "ovsdb-cms"
+  }
+
+  application {
+    name     = module.neutron.name
+    endpoint = "ovsdb-cms"
+  }
+}
+
+resource "juju_integration" "ovn-external-to-neutron" {
+  count = local.is-ovn-external && !var.is-region-controller ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    offer_url = var.external-ovsdb-cms-offer-url
+    endpoint  = "ovsdb-cms"
   }
 
   application {
@@ -1101,11 +1123,11 @@ module "octavia" {
 
 # juju integrate ovn-central octavia
 resource "juju_integration" "ovn-central-to-octavia" {
-  count = var.enable-octavia ? 1 : 0
+  count = var.enable-octavia && !local.is-ovn-external ? 1 : 0
   model = juju_model.sunbeam.name
 
   application {
-    name     = module.ovn.name
+    name     = module.ovn[0].name
     endpoint = "ovsdb-cms"
   }
 
@@ -1114,6 +1136,22 @@ resource "juju_integration" "ovn-central-to-octavia" {
     endpoint = "ovsdb-cms"
   }
 }
+
+resource "juju_integration" "ovn-external-to-octavia" {
+  count = var.enable-octavia && local.is-ovn-external ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    offer_url = var.external-ovsdb-cms-offer-url
+    endpoint  = "ovsdb-cms"
+  }
+
+  application {
+    name     = module.octavia[count.index].name
+    endpoint = "ovsdb-cms"
+  }
+}
+
 
 # juju integrate octavia certificates
 resource "juju_integration" "octavia-to-ca" {

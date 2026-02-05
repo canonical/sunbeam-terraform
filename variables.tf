@@ -1180,6 +1180,12 @@ variable "external-keystone-ops-offer-url" {
   default     = null
 }
 
+variable "external-ovsdb-cms-offer-url" {
+  description = "URL of the external ovsdb-cms offer"
+  type        = string
+  default     = null
+}
+
 variable "external-cert-distributor-offer-url" {
   description = "URL of the external cert distributor offer"
   type        = string
