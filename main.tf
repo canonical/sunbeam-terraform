@@ -105,8 +105,10 @@ module "single-mysql" {
   model                 = juju_model.sunbeam.name
   name                  = local.single-mysql
   channel               = var.mysql-channel
+  router-channel        = var.mysql-router-channel
   revision              = var.mysql-revision
   scale                 = var.ha-scale
+  router-scale          = var.ha-scale
   resource-configs      = var.mysql-config
   resource-storages     = var.mysql-storage
   grafana-dashboard-app = local.observability-agent-name
@@ -120,13 +122,21 @@ module "many-mysql" {
   model                 = juju_model.sunbeam.name
   name                  = local.mysql[each.key]
   channel               = var.mysql-channel
+  router-channel        = var.mysql-router-channel
   revision              = var.mysql-revision
   scale                 = var.ha-scale
+  router-scale          = var.ha-scale
   resource-configs      = merge(var.mysql-config, each.value.configs)
   resource-storages     = merge(var.mysql-storage, each.value.storages)
   grafana-dashboard-app = local.observability-agent-name
   metrics-endpoint-app  = local.observability-agent-name
   logging-app           = local.observability-agent-name
+}
+
+locals {
+  mysql-provider = {
+    for k, v in local.mysql-services : k => var.many-mysql ? (v != null ? module.many-mysql[k].database-application-name : null) : module.single-mysql[0].database-application-name
+  }
 }
 
 module "rabbitmq" {
@@ -150,7 +160,7 @@ module "glance" {
   channel                               = var.glance-channel == null ? var.openstack-channel : var.glance-channel
   revision                              = var.glance-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["glance"]
+  mysql                                 = local.mysql-provider["glance"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -158,7 +168,6 @@ module "glance" {
   ingress-internal                      = local.standard-internal-traefik-name
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : (var.enable-ceph ? var.os-api-scale : 1)
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.glance-config, {
     ceph-osd-replication-count     = var.ceph-osd-replication-count
@@ -169,20 +178,19 @@ module "glance" {
 }
 
 module "keystone" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  source               = "./modules/openstack-api"
-  charm                = "keystone-k8s"
-  name                 = "keystone"
-  model                = juju_model.sunbeam.name
-  channel              = var.keystone-channel == null ? var.openstack-channel : var.keystone-channel
-  revision             = var.keystone-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["keystone"]
-  ingress-internal     = local.controller-internal-traefik-name
-  ingress-public       = local.controller-public-traefik-name
-  scale                = var.is-secondary-region ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  logging-app          = local.observability-agent-name
+  depends_on       = [module.single-mysql, module.many-mysql]
+  source           = "./modules/openstack-api"
+  charm            = "keystone-k8s"
+  name             = "keystone"
+  model            = juju_model.sunbeam.name
+  channel          = var.keystone-channel == null ? var.openstack-channel : var.keystone-channel
+  revision         = var.keystone-revision
+  rabbitmq         = module.rabbitmq.name
+  mysql            = local.mysql-provider["keystone"]
+  ingress-internal = local.controller-internal-traefik-name
+  ingress-public   = local.controller-public-traefik-name
+  scale            = var.is-secondary-region ? 0 : var.os-api-scale
+  logging-app      = local.observability-agent-name
   resource-configs = merge(var.keystone-config, {
     enable-telemetry-notifications = var.enable-telemetry
     region                         = var.region
@@ -200,7 +208,7 @@ module "nova" {
   channel                               = var.nova-channel == null ? var.openstack-channel : var.nova-channel
   revision                              = var.nova-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["nova"]
+  mysql                                 = local.mysql-provider["nova"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -208,7 +216,6 @@ module "nova" {
   ingress-internal                      = local.standard-internal-traefik-name
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.nova-config, {
     region = var.region
@@ -253,7 +260,7 @@ module "horizon" {
   model                               = juju_model.sunbeam.name
   channel                             = var.horizon-channel == null ? var.openstack-channel : var.horizon-channel
   revision                            = var.horizon-revision
-  mysql                               = local.mysql["horizon"]
+  mysql                               = local.mysql-provider["horizon"]
   keystone-credentials                = local.keystone-service-name
   external-keystone-offer-url         = var.external-keystone-offer-url
   keystone-cacerts                    = local.keystone-service-name
@@ -262,7 +269,6 @@ module "horizon" {
   ingress-internal                    = local.controller-internal-traefik-name
   ingress-public                      = local.controller-public-traefik-name
   scale                               = var.is-secondary-region ? 0 : var.os-api-scale
-  mysql-router-channel                = var.mysql-router-channel
   logging-app                         = local.observability-agent-name
   resource-configs = merge(var.horizon-config, {
     plugins = jsonencode(var.horizon-plugins)
@@ -278,7 +284,7 @@ module "neutron" {
   channel                               = var.neutron-channel == null ? var.openstack-channel : var.neutron-channel
   revision                              = var.neutron-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["neutron"]
+  mysql                                 = local.mysql-provider["neutron"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -286,7 +292,6 @@ module "neutron" {
   ingress-internal                      = local.standard-internal-traefik-name
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.neutron-config, {
     region = var.region
@@ -301,7 +306,7 @@ module "placement" {
   model                                 = juju_model.sunbeam.name
   channel                               = var.placement-channel == null ? var.openstack-channel : var.placement-channel
   revision                              = var.placement-revision
-  mysql                                 = local.mysql["placement"]
+  mysql                                 = local.mysql-provider["placement"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -309,7 +314,6 @@ module "placement" {
   ingress-internal                      = local.standard-internal-traefik-name
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.placement-config, {
     region = var.region
@@ -656,7 +660,7 @@ module "cinder" {
   channel                               = var.cinder-channel == null ? var.openstack-channel : var.cinder-channel
   revision                              = var.cinder-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["cinder"]
+  mysql                                 = local.mysql-provider["cinder"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -664,7 +668,6 @@ module "cinder" {
   ingress-internal                      = local.standard-internal-traefik-name
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.cinder-config, {
     region = var.region
@@ -749,7 +752,7 @@ module "heat" {
   channel                               = var.heat-channel == null ? var.openstack-channel : var.heat-channel
   revision                              = var.heat-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["heat"]
+  mysql                                 = local.mysql-provider["heat"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-ops                          = local.keystone-service-name
@@ -759,7 +762,6 @@ module "heat" {
   ingress-internal                      = ""
   ingress-public                        = ""
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.heat-config, {
     region = var.region
@@ -806,7 +808,7 @@ module "aodh" {
   channel                               = var.aodh-channel == null ? var.openstack-channel : var.aodh-channel
   revision                              = var.aodh-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["aodh"]
+  mysql                                 = local.mysql-provider["aodh"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -814,7 +816,6 @@ module "aodh" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.aodh-config, {
     region = var.region
@@ -830,7 +831,7 @@ module "gnocchi" {
   model                                 = juju_model.sunbeam.name
   channel                               = var.gnocchi-channel == null ? var.openstack-channel : var.gnocchi-channel
   revision                              = var.gnocchi-revision
-  mysql                                 = local.mysql["gnocchi"]
+  mysql                                 = local.mysql-provider["gnocchi"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -838,7 +839,6 @@ module "gnocchi" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.gnocchi-config, {
     ceph-osd-replication-count = var.ceph-osd-replication-count
@@ -1118,7 +1118,7 @@ module "octavia" {
   model                                 = juju_model.sunbeam.name
   channel                               = var.octavia-channel == null ? var.openstack-channel : var.octavia-channel
   revision                              = var.octavia-revision
-  mysql                                 = local.mysql["octavia"]
+  mysql                                 = local.mysql-provider["octavia"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-ops                          = local.keystone-service-name
@@ -1128,7 +1128,6 @@ module "octavia" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.octavia-config, {
     region = var.region
@@ -1226,7 +1225,7 @@ module "designate" {
   channel                               = var.designate-channel == null ? var.openstack-channel : var.designate-channel
   revision                              = var.designate-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["designate"]
+  mysql                                 = local.mysql-provider["designate"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -1234,7 +1233,6 @@ module "designate" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.designate-config, {
     "nameservers" = var.nameservers
@@ -1298,7 +1296,7 @@ module "barbican" {
   channel                               = var.barbican-channel == null ? var.openstack-channel : var.barbican-channel
   revision                              = var.barbican-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["barbican"]
+  mysql                                 = local.mysql-provider["barbican"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-ops                          = local.keystone-service-name
@@ -1308,7 +1306,6 @@ module "barbican" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.barbican-config, {
     region = var.region
@@ -1332,23 +1329,22 @@ resource "juju_integration" "barbican-to-vault" {
 
 # Ironic feature.
 module "ironic" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  count                = var.enable-ironic ? 1 : 0
-  source               = "./modules/openstack-api"
-  charm                = "ironic-k8s"
-  name                 = "ironic"
-  model                = juju_model.sunbeam.name
-  channel              = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
-  revision             = var.ironic-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
-  keystone             = local.keystone-service-name
-  keystone-cacerts     = local.keystone-service-name
-  ingress-internal     = local.standard-internal-traefik-name
-  ingress-public       = local.standard-public-traefik-name
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  logging-app          = local.observability-agent-name
+  depends_on       = [module.single-mysql, module.many-mysql]
+  count            = var.enable-ironic ? 1 : 0
+  source           = "./modules/openstack-api"
+  charm            = "ironic-k8s"
+  name             = "ironic"
+  model            = juju_model.sunbeam.name
+  channel          = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
+  revision         = var.ironic-revision
+  rabbitmq         = module.rabbitmq.name
+  mysql            = local.mysql-provider["ironic"]
+  keystone         = local.keystone-service-name
+  keystone-cacerts = local.keystone-service-name
+  ingress-internal = local.standard-internal-traefik-name
+  ingress-public   = local.standard-public-traefik-name
+  scale            = var.is-region-controller ? 0 : var.os-api-scale
+  logging-app      = local.observability-agent-name
   resource-configs = merge(var.ironic-config, {
     region = var.region
   })
@@ -1364,12 +1360,11 @@ module "nova-ironic" {
   channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
   revision             = var.nova-ironic-revision
   rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["nova"]
+  mysql                = local.mysql-provider["nova"]
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : 1
-  mysql-router-channel = var.mysql-router-channel
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.nova-ironic-config, {
   })
@@ -1386,12 +1381,11 @@ module "ironic-conductor" {
   channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
   revision             = var.ironic-conductor-revision
   rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
+  mysql                = local.mysql-provider["ironic"]
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.ironic-conductor-config, {
   })
@@ -1497,12 +1491,11 @@ module "nova-ironic-shards" {
   channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
   revision             = var.nova-ironic-revision
   rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["nova"]
+  mysql                = local.mysql-provider["nova"]
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : 1
-  mysql-router-channel = var.mysql-router-channel
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.nova-ironic-config, {
   })
@@ -1549,12 +1542,11 @@ module "ironic-conductor-groups" {
   channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
   revision             = var.ironic-conductor-revision
   rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
+  mysql                = local.mysql-provider["ironic"]
   keystone-credentials = local.keystone-service-name
   ingress-internal     = ""
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
   logging-app          = local.observability-agent-name
   resource-configs     = merge(var.ironic-conductor-config, each.value)
 }
@@ -1652,7 +1644,7 @@ module "magnum" {
   channel                               = var.magnum-channel == null ? var.openstack-channel : var.magnum-channel
   revision                              = var.magnum-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["magnum"]
+  mysql                                 = local.mysql-provider["magnum"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-ops                          = local.keystone-service-name
@@ -1662,7 +1654,6 @@ module "magnum" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.magnum-config, {
     "cluster-user-trust" = "true"
@@ -1680,7 +1671,7 @@ module "manila" {
   channel                               = var.manila-channel == null ? var.openstack-channel : var.manila-channel
   revision                              = var.manila-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["manila"]
+  mysql                                 = local.mysql-provider["manila"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -1688,7 +1679,6 @@ module "manila" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.manila-config, {
     region = var.region
@@ -1705,13 +1695,12 @@ module "manila-cephfs" {
   channel                     = var.manila-cephfs-channel == null ? var.openstack-channel : var.manila-cephfs-channel
   revision                    = var.manila-cephfs-revision
   rabbitmq                    = module.rabbitmq.name
-  mysql                       = local.mysql["manila"]
+  mysql                       = local.mysql-provider["manila"]
   keystone-credentials        = local.keystone-service-name
   external-keystone-offer-url = var.external-keystone-offer-url
   ingress-internal            = ""
   ingress-public              = ""
   scale                       = var.os-api-scale
-  mysql-router-channel        = var.mysql-router-channel
   logging-app                 = local.observability-agent-name
 }
 
@@ -2206,7 +2195,7 @@ module "watcher" {
   channel                               = var.watcher-channel == null ? var.openstack-channel : var.watcher-channel
   revision                              = var.watcher-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["watcher"]
+  mysql                                 = local.mysql-provider["watcher"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -2214,7 +2203,6 @@ module "watcher" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.watcher-config, {
     enable-telemetry-notifications = var.enable-telemetry
@@ -2283,7 +2271,7 @@ module "masakari" {
   channel                               = var.masakari-channel == null ? var.openstack-channel : var.masakari-channel
   revision                              = var.masakari-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["masakari"]
+  mysql                                 = local.mysql-provider["masakari"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -2291,7 +2279,6 @@ module "masakari" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.masakari-config, {
     region = var.region
@@ -2360,7 +2347,7 @@ module "cloudkitty" {
   channel                               = var.cloudkitty-channel == null ? var.openstack-channel : var.cloudkitty-channel
   revision                              = var.cloudkitty-revision
   rabbitmq                              = module.rabbitmq.name
-  mysql                                 = local.mysql["cloudkitty"]
+  mysql                                 = local.mysql-provider["cloudkitty"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
   keystone-cacerts                      = local.keystone-service-name
@@ -2368,7 +2355,6 @@ module "cloudkitty" {
   ingress-internal                      = juju_application.traefik.name
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
-  mysql-router-channel                  = var.mysql-router-channel
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.cloudkitty-config, {
     region = var.region

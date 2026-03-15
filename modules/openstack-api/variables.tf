@@ -36,12 +36,6 @@ variable "base" {
   default     = "ubuntu@24.04"
 }
 
-variable "mysql-router-channel" {
-  description = "Operator channel for MySQL router deployment"
-  type        = string
-  default     = "8.0/edge"
-}
-
 variable "scale" {
   description = "Scale of application"
   type        = number
@@ -71,7 +65,7 @@ variable "rabbitmq" {
 }
 
 variable "mysql" {
-  description = "MySQL operator to integrate with"
+  description = "Application exposing the database relation to integrate with"
   type        = string
 }
 

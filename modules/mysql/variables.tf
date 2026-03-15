@@ -25,6 +25,12 @@ variable "channel" {
   default     = "8.0/stable"
 }
 
+variable "router-channel" {
+  description = "MySQL router K8S operator channel"
+  type        = string
+  default     = "8.0/stable"
+}
+
 variable "revision" {
   description = "MySQL K8S operator channel revision"
   type        = number
@@ -41,6 +47,12 @@ variable "scale" {
   description = "Scale of MySQL K8S operator"
   type        = number
   default     = 1
+}
+
+variable "router-scale" {
+  description = "Scale of MySQL router K8S operator"
+  type        = number
+  default     = null
 }
 
 variable "model" {

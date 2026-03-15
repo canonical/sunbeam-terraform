@@ -24,6 +24,10 @@ terraform {
   }
 }
 
+locals {
+  router_scale = coalesce(var.router-scale, var.scale)
+}
+
 # core mysql k8s operator
 resource "juju_application" "mysql" {
   name        = var.name
@@ -42,6 +46,33 @@ resource "juju_application" "mysql" {
   storage_directives = var.resource-storages
 
   units = var.scale
+}
+
+resource "juju_application" "mysql-router" {
+  name  = "${var.name}-router"
+  trust = true
+  model = var.model
+
+  charm {
+    name    = "mysql-router-k8s"
+    channel = var.router-channel
+  }
+
+  units = local.router_scale
+}
+
+resource "juju_integration" "mysql-router-to-mysql" {
+  model = var.model
+
+  application {
+    name     = juju_application.mysql-router.name
+    endpoint = "backend-database"
+  }
+
+  application {
+    name     = juju_application.mysql.name
+    endpoint = "database"
+  }
 }
 
 resource "juju_integration" "mysql-to-metrics-endpoint" {
