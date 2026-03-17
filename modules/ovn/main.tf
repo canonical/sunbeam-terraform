@@ -19,14 +19,14 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
 
 resource "juju_application" "ovn-central" {
-  name  = "ovn-central"
-  model = var.model
+  name       = "ovn-central"
+  model_uuid = var.model-uuid
 
   charm {
     name     = "ovn-central-k8s"
@@ -41,10 +41,10 @@ resource "juju_application" "ovn-central" {
 }
 
 resource "juju_application" "ovn-relay" {
-  count = var.relay != "" ? 1 : 0
-  name  = "ovn-relay"
-  trust = true
-  model = var.model
+  count      = var.relay != "" ? 1 : 0
+  name       = "ovn-relay"
+  trust      = true
+  model_uuid = var.model-uuid
 
   charm {
     name     = "ovn-relay-k8s"
@@ -59,8 +59,8 @@ resource "juju_application" "ovn-relay" {
 
 
 resource "juju_integration" "ovn-central-to-ovn-relay" {
-  count = var.relay != "" ? 1 : 0
-  model = var.model
+  count      = var.relay != "" ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.ovn-central.name
@@ -74,7 +74,7 @@ resource "juju_integration" "ovn-central-to-ovn-relay" {
 }
 
 resource "juju_integration" "ovn-central-to-ca" {
-  model = var.model
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.ovn-central.name
@@ -88,8 +88,8 @@ resource "juju_integration" "ovn-central-to-ca" {
 }
 
 resource "juju_integration" "ovn-relay-to-ca" {
-  count = var.relay != "" ? 1 : 0
-  model = var.model
+  count      = var.relay != "" ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.ovn-relay[0].name
@@ -103,8 +103,8 @@ resource "juju_integration" "ovn-relay-to-ca" {
 }
 
 resource "juju_integration" "ovn-central-to-logging" {
-  count = (var.logging-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.ovn-central.name
@@ -118,8 +118,8 @@ resource "juju_integration" "ovn-central-to-logging" {
 }
 
 resource "juju_integration" "ovn-relay-to-logging" {
-  count = (var.logging-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.ovn-relay[0].name
@@ -134,7 +134,7 @@ resource "juju_integration" "ovn-relay-to-logging" {
 
 resource "juju_offer" "ovn-relay-offer" {
   count            = var.relay != "" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.ovn-relay[count.index].name
   endpoints        = ["ovsdb-cms-relay"]
 }

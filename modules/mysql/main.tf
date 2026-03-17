@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
@@ -28,7 +28,7 @@ terraform {
 resource "juju_application" "mysql" {
   name        = var.name
   trust       = true
-  model       = var.model
+  model_uuid  = var.model-uuid
   constraints = var.constraints
 
   charm {
@@ -45,8 +45,8 @@ resource "juju_application" "mysql" {
 }
 
 resource "juju_integration" "mysql-to-metrics-endpoint" {
-  count = (var.metrics-endpoint-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.metrics-endpoint-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.mysql.name
@@ -60,8 +60,8 @@ resource "juju_integration" "mysql-to-metrics-endpoint" {
 }
 
 resource "juju_integration" "mysql-to-grafana-dashboard" {
-  count = (var.grafana-dashboard-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.grafana-dashboard-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.mysql.name
@@ -75,8 +75,8 @@ resource "juju_integration" "mysql-to-grafana-dashboard" {
 }
 
 resource "juju_integration" "mysql-to-logging" {
-  count = (var.logging-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.mysql.name

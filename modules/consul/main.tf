@@ -19,15 +19,15 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
 
 resource "juju_application" "consul" {
-  name  = var.name
-  trust = true
-  model = var.model
+  name       = var.name
+  trust      = true
+  model_uuid = var.model-uuid
 
   charm {
     name     = "consul-k8s"
@@ -44,7 +44,7 @@ resource "juju_application" "consul" {
 }
 
 resource "juju_offer" "consul-cluster-offer" {
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.consul.name
   endpoints        = ["consul-cluster"]
 }

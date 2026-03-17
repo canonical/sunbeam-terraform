@@ -53,8 +53,8 @@ variable "charm" {
   type        = string
 }
 
-variable "model" {
-  description = "Juju model to deploy resources in"
+variable "model-uuid" {
+  description = "Juju model UUID to deploy resources in"
   type        = string
 }
 

@@ -19,15 +19,15 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
 
 resource "juju_application" "service" {
-  name  = var.name
-  model = var.model
-  trust = var.trust
+  name       = var.name
+  model_uuid = var.model-uuid
+  trust      = var.trust
 
   charm {
     name     = var.charm
@@ -44,9 +44,9 @@ resource "juju_application" "service" {
 }
 
 resource "juju_application" "mysql-router" {
-  name  = "${var.name}-mysql-router"
-  trust = true
-  model = var.model
+  name       = "${var.name}-mysql-router"
+  trust      = true
+  model_uuid = var.model-uuid
 
   charm {
     name    = "mysql-router-k8s"
@@ -57,7 +57,7 @@ resource "juju_application" "mysql-router" {
 }
 
 resource "juju_integration" "mysql-router-to-mysql" {
-  model = var.model
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.mysql-router.name
@@ -71,7 +71,7 @@ resource "juju_integration" "mysql-router-to-mysql" {
 }
 
 resource "juju_integration" "service-to-mysql-router" {
-  model = var.model
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.service.name
@@ -86,9 +86,8 @@ resource "juju_integration" "service-to-mysql-router" {
 
 # NOTE: this integration is optional
 resource "juju_integration" "service-to-rabbitmq" {
-  for_each = var.rabbitmq == "" ? {} : { target = var.rabbitmq }
-
-  model = var.model
+  for_each   = var.rabbitmq == "" ? {} : { target = var.rabbitmq }
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.service.name
@@ -103,8 +102,8 @@ resource "juju_integration" "service-to-rabbitmq" {
 
 # NOTE: this integration is optional
 resource "juju_integration" "keystone-to-service" {
-  for_each = var.keystone == "" ? {} : { target = var.keystone }
-  model    = var.model
+  for_each   = var.keystone == "" ? {} : { target = var.keystone }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -118,8 +117,8 @@ resource "juju_integration" "keystone-to-service" {
 }
 
 resource "juju_integration" "external-keystone-to-service" {
-  for_each = !can(coalesce(var.external-keystone-endpoints-offer-url)) ? {} : { target = var.external-keystone-endpoints-offer-url }
-  model    = var.model
+  for_each   = !can(coalesce(var.external-keystone-endpoints-offer-url)) ? {} : { target = var.external-keystone-endpoints-offer-url }
+  model_uuid = var.model-uuid
 
   application {
     offer_url = each.value
@@ -133,8 +132,8 @@ resource "juju_integration" "external-keystone-to-service" {
 }
 
 resource "juju_integration" "service-to-keystone" {
-  for_each = var.keystone-credentials == "" ? {} : { target = var.keystone-credentials }
-  model    = var.model
+  for_each   = var.keystone-credentials == "" ? {} : { target = var.keystone-credentials }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -149,8 +148,8 @@ resource "juju_integration" "service-to-keystone" {
 
 // Only used with external Keystone offers (e.g. multi-region setups).
 resource "juju_integration" "external-service-to-keystone" {
-  for_each = !can(coalesce(var.external-keystone-offer-url)) ? {} : { target = var.external-keystone-offer-url }
-  model    = var.model
+  for_each   = !can(coalesce(var.external-keystone-offer-url)) ? {} : { target = var.external-keystone-offer-url }
+  model_uuid = var.model-uuid
 
   application {
     offer_url = var.external-keystone-offer-url
@@ -164,8 +163,8 @@ resource "juju_integration" "external-service-to-keystone" {
 }
 
 resource "juju_integration" "service-to-keystone-ops" {
-  for_each = var.keystone-ops == "" ? {} : { target = var.keystone-ops }
-  model    = var.model
+  for_each   = var.keystone-ops == "" ? {} : { target = var.keystone-ops }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -179,8 +178,8 @@ resource "juju_integration" "service-to-keystone-ops" {
 }
 
 resource "juju_integration" "external-service-to-keystone-ops" {
-  for_each = !can(coalesce(var.external-keystone-ops-offer-url)) ? {} : { target = var.external-keystone-ops-offer-url }
-  model    = var.model
+  for_each   = !can(coalesce(var.external-keystone-ops-offer-url)) ? {} : { target = var.external-keystone-ops-offer-url }
+  model_uuid = var.model-uuid
 
   application {
     offer_url = each.value
@@ -194,8 +193,8 @@ resource "juju_integration" "external-service-to-keystone-ops" {
 }
 
 resource "juju_integration" "service-to-keystone-endpoints" {
-  for_each = var.keystone-endpoints == "" ? {} : { target = var.keystone-endpoints }
-  model    = var.model
+  for_each   = var.keystone-endpoints == "" ? {} : { target = var.keystone-endpoints }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -209,8 +208,8 @@ resource "juju_integration" "service-to-keystone-endpoints" {
 }
 
 resource "juju_integration" "service-to-keystone-cacerts" {
-  for_each = var.keystone-cacerts == "" ? {} : { target = var.keystone-cacerts }
-  model    = var.model
+  for_each   = var.keystone-cacerts == "" ? {} : { target = var.keystone-cacerts }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -224,8 +223,8 @@ resource "juju_integration" "service-to-keystone-cacerts" {
 }
 
 resource "juju_integration" "external-service-to-keystone-cacerts" {
-  for_each = !can(coalesce(var.external-cert-distributor-offer-url)) ? {} : { target = var.external-cert-distributor-offer-url }
-  model    = var.model
+  for_each   = !can(coalesce(var.external-cert-distributor-offer-url)) ? {} : { target = var.external-cert-distributor-offer-url }
+  model_uuid = var.model-uuid
 
   application {
     offer_url = each.value
@@ -241,8 +240,8 @@ resource "juju_integration" "external-service-to-keystone-cacerts" {
 
 # juju integrate traefik-public glance
 resource "juju_integration" "traefik-public-to-service" {
-  for_each = var.ingress-public == "" ? {} : { target = var.ingress-public }
-  model    = var.model
+  for_each   = var.ingress-public == "" ? {} : { target = var.ingress-public }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -257,8 +256,8 @@ resource "juju_integration" "traefik-public-to-service" {
 
 # juju integrate traefik-internal glance
 resource "juju_integration" "traefik-internal-to-service" {
-  for_each = var.ingress-internal == "" ? {} : { target = var.ingress-internal }
-  model    = var.model
+  for_each   = var.ingress-internal == "" ? {} : { target = var.ingress-internal }
+  model_uuid = var.model-uuid
 
   application {
     name     = each.value
@@ -273,10 +272,10 @@ resource "juju_integration" "traefik-internal-to-service" {
 
 # TODO: specific module for nova?
 resource "juju_application" "nova-api-mysql-router" {
-  count = var.name == "nova" ? 1 : 0
-  name  = "nova-api-mysql-router"
-  model = var.model
-  trust = true
+  count      = var.name == "nova" ? 1 : 0
+  name       = "nova-api-mysql-router"
+  model_uuid = var.model-uuid
+  trust      = true
 
   charm {
     name    = "mysql-router-k8s"
@@ -287,8 +286,8 @@ resource "juju_application" "nova-api-mysql-router" {
 }
 
 resource "juju_integration" "nova-api-to-mysql-router" {
-  count = length(juju_application.nova-api-mysql-router)
-  model = var.model
+  count      = length(juju_application.nova-api-mysql-router)
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.service.name
@@ -302,8 +301,8 @@ resource "juju_integration" "nova-api-to-mysql-router" {
 }
 
 resource "juju_integration" "nova-api-router-to-mysql" {
-  count = length(juju_application.nova-api-mysql-router)
-  model = var.model
+  count      = length(juju_application.nova-api-mysql-router)
+  model_uuid = var.model-uuid
 
   application {
     name     = var.mysql
@@ -317,10 +316,10 @@ resource "juju_integration" "nova-api-router-to-mysql" {
 }
 
 resource "juju_application" "nova-cell-mysql-router" {
-  count = var.name == "nova" ? 1 : 0
-  name  = "nova-cell-mysql-router"
-  model = var.model
-  trust = true
+  count      = var.name == "nova" ? 1 : 0
+  name       = "nova-cell-mysql-router"
+  model_uuid = var.model-uuid
+  trust      = true
 
   charm {
     name    = "mysql-router-k8s"
@@ -331,8 +330,8 @@ resource "juju_application" "nova-cell-mysql-router" {
 }
 
 resource "juju_integration" "nova-cell-router-to-mysql" {
-  count = length(juju_application.nova-cell-mysql-router)
-  model = var.model
+  count      = length(juju_application.nova-cell-mysql-router)
+  model_uuid = var.model-uuid
 
   application {
     name     = var.mysql
@@ -346,8 +345,8 @@ resource "juju_integration" "nova-cell-router-to-mysql" {
 }
 
 resource "juju_integration" "nova-cell-to-mysql-router" {
-  count = length(juju_application.nova-cell-mysql-router)
-  model = var.model
+  count      = length(juju_application.nova-cell-mysql-router)
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.service.name
@@ -361,8 +360,8 @@ resource "juju_integration" "nova-cell-to-mysql-router" {
 }
 
 resource "juju_integration" "service-to-logging" {
-  count = (var.logging-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.service.name
@@ -381,7 +380,7 @@ resource "juju_integration" "service-to-logging" {
 # exposed as single offer URL
 resource "juju_offer" "keystone-offer" {
   count            = var.name == "keystone" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.service.name
   endpoints        = ["identity-credentials"]
   name             = "keystone-credentials"
@@ -389,7 +388,7 @@ resource "juju_offer" "keystone-offer" {
 
 resource "juju_offer" "keystone-endpoints-offer" {
   count            = var.name == "keystone" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.service.name
   endpoints        = ["identity-service"]
   name             = "keystone-endpoints"
@@ -397,7 +396,7 @@ resource "juju_offer" "keystone-endpoints-offer" {
 
 resource "juju_offer" "keystone-ops-offer" {
   count            = var.name == "keystone" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.service.name
   endpoints        = ["identity-ops"]
   name             = "keystone-ops"
@@ -405,7 +404,7 @@ resource "juju_offer" "keystone-ops-offer" {
 
 resource "juju_offer" "cert-distributor-offer" {
   count            = var.name == "keystone" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.service.name
   endpoints        = ["send-ca-cert"]
   name             = "cert-distributor"
@@ -413,7 +412,7 @@ resource "juju_offer" "cert-distributor-offer" {
 
 resource "juju_offer" "nova-offer" {
   count            = var.name == "nova" ? 1 : 0
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.service.name
   endpoints        = ["nova-service"]
 }
