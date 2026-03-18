@@ -1405,20 +1405,21 @@ module "ironic-conductor" {
   })
 }
 
-resource "juju_integration" "ironic-to-ingress-internal" {
-  count = (var.enable-ironic) ? 1 : 0
-  model = juju_model.sunbeam.name
-
-  application {
-    name     = module.ironic[count.index].name
-    endpoint = "traefik-route-internal"
-  }
-
-  application {
-    name     = juju_application.traefik.name
-    endpoint = "traefik-route"
-  }
-}
+# This relation is not required in 2024.1
+# resource "juju_integration" "ironic-to-ingress-internal" {
+#   count = (var.enable-ironic) ? 1 : 0
+#   model = juju_model.sunbeam.name
+# 
+#   application {
+#     name     = module.ironic[count.index].name
+#     endpoint = "traefik-route-internal"
+#   }
+# 
+#   application {
+#     name     = juju_application.traefik.name
+#     endpoint = "traefik-route"
+#   }
+# }
 
 resource "juju_integration" "nova-ironic-to-ingress-internal" {
   count = (var.enable-ironic) ? 1 : 0
