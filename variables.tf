@@ -519,6 +519,12 @@ variable "gnocchi-config" {
   default     = {}
 }
 
+variable "metrics-storage-offer-url" {
+  description = "Offer URL for S3-compatible metrics storage backend"
+  type        = string
+  default     = null
+}
+
 variable "ceilometer-channel" {
   description = "Operator channel for Ceilometer deployment"
   type        = string
