@@ -956,6 +956,12 @@ variable "traefik-to-tls-provider" {
   default     = null
 }
 
+variable "octavia-to-tls-provider" {
+  description = "Application name providing the certificates endpoint octavia will be integrated with"
+  type        = string
+  default     = null
+}
+
 variable "manual-tls-certificates-channel" {
   description = "Operator channel for Manual Tls Certificates deployment"
   type        = string
