@@ -1118,6 +1118,8 @@ module "octavia" {
   model                                 = juju_model.sunbeam.name
   channel                               = var.octavia-channel == null ? var.openstack-channel : var.octavia-channel
   revision                              = var.octavia-revision
+  trust                                 = true
+  rabbitmq                              = module.rabbitmq.name
   mysql                                 = local.mysql["octavia"]
   keystone                              = local.keystone-service-name
   external-keystone-endpoints-offer-url = var.external-keystone-endpoints-offer-url
@@ -1181,6 +1183,54 @@ resource "juju_integration" "octavia-to-ca" {
   application {
     name     = juju_application.certificate-authority.name
     endpoint = "certificates"
+  }
+}
+
+# juju integrate octavia barbican
+resource "juju_integration" "octavia-to-barbican" {
+  count = (var.enable-octavia && var.enable-barbican) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = module.octavia[count.index].name
+    endpoint = "barbican-service"
+  }
+
+  application {
+    name     = module.barbican[count.index].name
+    endpoint = "barbican-service"
+  }
+}
+
+# juju integrate octavia manual-tls-certificates amphora_issuing_ca
+resource "juju_integration" "octavia-to-ca_amphora_issuing_ca" {
+  count = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = var.octavia-to-tls-provider
+    endpoint = "certificates"
+  }
+
+  application {
+    name     = module.octavia[count.index].name
+    endpoint = "amphora-issuing-ca"
+  }
+}
+
+# juju integrate octavia manual-tls-certificates amphora_controller_cert
+resource "juju_integration" "octavia-to-ca_amphora_controller_cert" {
+  count = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = var.octavia-to-tls-provider
+    endpoint = "certificates"
+  }
+
+  application {
+    name     = module.octavia[count.index].name
+    endpoint = "amphora-controller-cert"
   }
 }
 
@@ -1841,7 +1891,7 @@ resource "juju_integration" "ldap-to-keystone" {
 }
 
 resource "juju_application" "manual-tls-certificates" {
-  count = (var.traefik-to-tls-provider == "manual-tls-certificates" || var.traefik-to-tls-provider == "vault") ? 1 : 0
+  count = (var.traefik-to-tls-provider == "manual-tls-certificates" || var.traefik-to-tls-provider == "vault" || var.octavia-to-tls-provider == "manual-tls-certificates") ? 1 : 0
   name  = "manual-tls-certificates"
   model = juju_model.sunbeam.name
 
