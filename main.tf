@@ -1339,6 +1339,51 @@ resource "juju_application" "vault" {
   units              = var.ha-scale
 }
 
+resource "juju_integration" "vault-to-metrics-endpoint" {
+  count = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = juju_application.observability-agent[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "vault-to-grafana-dashboard" {
+  count = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = juju_application.observability-agent[count.index].name
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
+resource "juju_integration" "vault-to-observability-agent-loki" {
+  count = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model = juju_model.sunbeam.name
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = juju_application.observability-agent[count.index].name
+    endpoint = "receive-loki-logs"
+  }
+}
+
 module "barbican" {
   depends_on                            = [module.single-mysql, module.many-mysql]
   count                                 = var.enable-barbican ? 1 : 0
