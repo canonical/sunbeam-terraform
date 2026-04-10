@@ -19,7 +19,7 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
@@ -102,7 +102,7 @@ resource "juju_model" "sunbeam" {
 module "single-mysql" {
   count                 = var.many-mysql ? 0 : 1
   source                = "./modules/mysql"
-  model                 = juju_model.sunbeam.name
+  model-uuid            = juju_model.sunbeam.uuid
   name                  = local.single-mysql
   channel               = var.mysql-channel
   revision              = var.mysql-revision
@@ -117,7 +117,7 @@ module "single-mysql" {
 module "many-mysql" {
   for_each              = tomap({ for k, v in local.mysql-services : k => v if v != null })
   source                = "./modules/mysql"
-  model                 = juju_model.sunbeam.name
+  model-uuid            = juju_model.sunbeam.uuid
   name                  = local.mysql[each.key]
   channel               = var.mysql-channel
   revision              = var.mysql-revision
@@ -131,7 +131,7 @@ module "many-mysql" {
 
 module "rabbitmq" {
   source            = "./modules/rabbitmq"
-  model             = juju_model.sunbeam.name
+  model-uuid        = juju_model.sunbeam.uuid
   scale             = var.ha-scale
   channel           = var.rabbitmq-channel
   revision          = var.rabbitmq-revision
@@ -145,7 +145,7 @@ module "glance" {
   source                                = "./modules/openstack-api"
   charm                                 = "glance-k8s"
   name                                  = "glance"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   trust                                 = true
   channel                               = var.glance-channel == null ? var.openstack-channel : var.glance-channel
   revision                              = var.glance-revision
@@ -173,7 +173,7 @@ module "keystone" {
   source               = "./modules/openstack-api"
   charm                = "keystone-k8s"
   name                 = "keystone"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   channel              = var.keystone-channel == null ? var.openstack-channel : var.keystone-channel
   revision             = var.keystone-revision
   rabbitmq             = module.rabbitmq.name
@@ -196,7 +196,7 @@ module "nova" {
   source                                = "./modules/openstack-api"
   charm                                 = "nova-k8s"
   name                                  = "nova"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.nova-channel == null ? var.openstack-channel : var.nova-channel
   revision                              = var.nova-revision
   rabbitmq                              = module.rabbitmq.name
@@ -216,8 +216,8 @@ module "nova" {
 }
 
 resource "juju_integration" "nova-to-ingress-public" {
-  count = var.is-region-controller ? 0 : 1
-  model = juju_model.sunbeam.name
+  count      = var.is-region-controller ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.nova.name
@@ -231,8 +231,8 @@ resource "juju_integration" "nova-to-ingress-public" {
 }
 
 resource "juju_integration" "nova-to-ingress-internal" {
-  count = var.is-region-controller ? 0 : 1
-  model = juju_model.sunbeam.name
+  count      = var.is-region-controller ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.nova.name
@@ -250,7 +250,7 @@ module "horizon" {
   source                              = "./modules/openstack-api"
   charm                               = "horizon-k8s"
   name                                = "horizon"
-  model                               = juju_model.sunbeam.name
+  model-uuid                          = juju_model.sunbeam.uuid
   channel                             = var.horizon-channel == null ? var.openstack-channel : var.horizon-channel
   revision                            = var.horizon-revision
   mysql                               = local.mysql["horizon"]
@@ -274,7 +274,7 @@ module "neutron" {
   source                                = "./modules/openstack-api"
   charm                                 = "neutron-k8s"
   name                                  = "neutron"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.neutron-channel == null ? var.openstack-channel : var.neutron-channel
   revision                              = var.neutron-revision
   rabbitmq                              = module.rabbitmq.name
@@ -298,7 +298,7 @@ module "placement" {
   source                                = "./modules/openstack-api"
   charm                                 = "placement-k8s"
   name                                  = "placement"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.placement-channel == null ? var.openstack-channel : var.placement-channel
   revision                              = var.placement-revision
   mysql                                 = local.mysql["placement"]
@@ -317,9 +317,9 @@ module "placement" {
 }
 
 resource "juju_application" "traefik" {
-  name  = "traefik"
-  trust = true
-  model = juju_model.sunbeam.name
+  name       = "traefik"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "traefik-k8s"
@@ -333,8 +333,8 @@ resource "juju_application" "traefik" {
 }
 
 resource "juju_integration" "traefik-internal-to-metrics-endpoint" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik.name
@@ -348,8 +348,8 @@ resource "juju_integration" "traefik-internal-to-metrics-endpoint" {
 }
 
 resource "juju_integration" "traefik-internal-to-grafana-dashboard" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik.name
@@ -363,8 +363,8 @@ resource "juju_integration" "traefik-internal-to-grafana-dashboard" {
 }
 
 resource "juju_integration" "traefik-internal-to-observability-agent-loki" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik.name
@@ -378,9 +378,9 @@ resource "juju_integration" "traefik-internal-to-observability-agent-loki" {
 }
 
 resource "juju_application" "traefik-public" {
-  name  = "traefik-public"
-  trust = true
-  model = juju_model.sunbeam.name
+  name       = "traefik-public"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "traefik-k8s"
@@ -398,8 +398,8 @@ resource "juju_application" "traefik-public" {
 }
 
 resource "juju_integration" "traefik-public-to-metrics-endpoint" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-public.name
@@ -413,8 +413,8 @@ resource "juju_integration" "traefik-public-to-metrics-endpoint" {
 }
 
 resource "juju_integration" "traefik-public-to-grafana-dashboard" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-public.name
@@ -428,8 +428,8 @@ resource "juju_integration" "traefik-public-to-grafana-dashboard" {
 }
 
 resource "juju_integration" "traefik-public-to-observability-agent-loki" {
-  count = var.enable-observability ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-observability ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-public.name
@@ -443,10 +443,10 @@ resource "juju_integration" "traefik-public-to-observability-agent-loki" {
 }
 
 resource "juju_application" "traefik-rgw" {
-  count = var.enable-ceph ? 1 : 0
-  name  = "traefik-rgw"
-  trust = true
-  model = juju_model.sunbeam.name
+  count      = var.enable-ceph ? 1 : 0
+  name       = "traefik-rgw"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "traefik-k8s"
@@ -465,14 +465,14 @@ resource "juju_application" "traefik-rgw" {
 
 resource "juju_offer" "ingress-rgw-offer" {
   count            = var.enable-ceph ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.traefik-rgw[count.index].name
   endpoints        = ["traefik-route"]
 }
 
 resource "juju_integration" "traefik-rgw-to-metrics-endpoint" {
-  count = (var.enable-ceph && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ceph && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-rgw[count.index].name
@@ -486,8 +486,8 @@ resource "juju_integration" "traefik-rgw-to-metrics-endpoint" {
 }
 
 resource "juju_integration" "traefik-rgw-to-grafana-dashboard" {
-  count = (var.enable-ceph && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ceph && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-rgw[count.index].name
@@ -501,8 +501,8 @@ resource "juju_integration" "traefik-rgw-to-grafana-dashboard" {
 }
 
 resource "juju_integration" "traefik-rgw-to-observability-agent-loki" {
-  count = (var.enable-ceph && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ceph && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-rgw[count.index].name
@@ -516,9 +516,9 @@ resource "juju_integration" "traefik-rgw-to-observability-agent-loki" {
 }
 
 resource "juju_application" "certificate-authority" {
-  name  = "certificate-authority"
-  trust = true
-  model = juju_model.sunbeam.name
+  name       = "certificate-authority"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "self-signed-certificates"
@@ -532,8 +532,8 @@ resource "juju_application" "certificate-authority" {
 }
 
 resource "juju_integration" "certificate-authority-to-keystone-cacert" {
-  count = (var.traefik-to-tls-provider == "certificate-authority" && !var.is-secondary-region) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.traefik-to-tls-provider == "certificate-authority" && !var.is-secondary-region) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.certificate-authority.name
@@ -554,7 +554,7 @@ moved {
 module "ovn" {
   count                  = local.is-ovn-external ? 0 : 1
   source                 = "./modules/ovn"
-  model                  = juju_model.sunbeam.name
+  model-uuid             = juju_model.sunbeam.uuid
   channel                = var.ovn-central-channel == null ? var.ovn-channel : var.ovn-central-channel
   revision               = var.ovn-central-revision
   scale                  = var.is-region-controller ? 0 : var.ha-scale
@@ -571,8 +571,8 @@ module "ovn" {
 
 # juju integrate ovn-central neutron
 resource "juju_integration" "ovn-central-to-neutron" {
-  model = juju_model.sunbeam.name
-  count = var.is-region-controller || local.is-ovn-external ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
+  count      = var.is-region-controller || local.is-ovn-external ? 0 : 1
 
   application {
     name     = module.ovn[0].name
@@ -586,8 +586,8 @@ resource "juju_integration" "ovn-central-to-neutron" {
 }
 
 resource "juju_integration" "ovn-external-to-neutron" {
-  count = local.is-ovn-external && !var.is-region-controller ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = local.is-ovn-external && !var.is-region-controller ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-ovsdb-cms-offer-url
@@ -602,8 +602,8 @@ resource "juju_integration" "ovn-external-to-neutron" {
 
 # juju integrate neutron vault
 resource "juju_integration" "neutron-to-ca" {
-  model = juju_model.sunbeam.name
-  count = var.is-region-controller ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
+  count      = var.is-region-controller ? 0 : 1
 
   application {
     name     = module.neutron.name
@@ -618,8 +618,8 @@ resource "juju_integration" "neutron-to-ca" {
 
 # juju integrate nova placement
 resource "juju_integration" "nova-to-placement" {
-  model = juju_model.sunbeam.name
-  count = var.is-region-controller ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
+  count      = var.is-region-controller ? 0 : 1
 
   application {
     name     = module.nova.name
@@ -634,8 +634,8 @@ resource "juju_integration" "nova-to-placement" {
 
 # juju integrate glance microceph
 resource "juju_integration" "glance-to-ceph" {
-  count = length(data.juju_offer.microceph)
-  model = juju_model.sunbeam.name
+  count      = length(data.juju_offer.microceph)
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.glance.name
@@ -652,7 +652,7 @@ module "cinder" {
   source                                = "./modules/openstack-api"
   charm                                 = "cinder-k8s"
   name                                  = "cinder"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.cinder-channel == null ? var.openstack-channel : var.cinder-channel
   revision                              = var.cinder-revision
   rabbitmq                              = module.rabbitmq.name
@@ -673,10 +673,10 @@ module "cinder" {
 
 # Cinder-volume MySQL router
 resource "juju_application" "cinder-volume-mysql-router" {
-  count = var.enable-cinder-volume ? 1 : 0
-  name  = "cinder-volume-mysql-router"
-  trust = true
-  model = juju_model.sunbeam.name
+  count      = var.enable-cinder-volume ? 1 : 0
+  name       = "cinder-volume-mysql-router"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name    = "mysql-router-k8s"
@@ -692,7 +692,7 @@ resource "juju_application" "cinder-volume-mysql-router" {
 resource "juju_integration" "cinder-volume-mysql-router-to-mysql" {
   count      = length(juju_application.cinder-volume-mysql-router)
   depends_on = [module.single-mysql, module.many-mysql]
-  model      = juju_model.sunbeam.name
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.cinder-volume-mysql-router[count.index].name
@@ -707,7 +707,7 @@ resource "juju_integration" "cinder-volume-mysql-router-to-mysql" {
 
 resource "juju_offer" "cinder-volume-database-offer" {
   count            = var.enable-cinder-volume ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.cinder-volume-mysql-router[count.index].name
   endpoints        = ["database"]
 }
@@ -720,8 +720,8 @@ locals {
 
 resource "juju_integration" "cinder-to-cinder-volume" {
   # Using count for backward compatibility
-  count = length(local.cinder_volume_offer_urls)
-  model = juju_model.sunbeam.name
+  count      = length(local.cinder_volume_offer_urls)
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.cinder.name
@@ -734,7 +734,7 @@ resource "juju_integration" "cinder-to-cinder-volume" {
 }
 
 resource "juju_offer" "ca-offer" {
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.certificate-authority.name
   endpoints        = ["certificates"]
 }
@@ -745,7 +745,7 @@ module "heat" {
   source                                = "./modules/openstack-api"
   charm                                 = "heat-k8s"
   name                                  = "heat"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.heat-channel == null ? var.openstack-channel : var.heat-channel
   revision                              = var.heat-revision
   rabbitmq                              = module.rabbitmq.name
@@ -767,8 +767,8 @@ module "heat" {
 }
 
 resource "juju_integration" "heat-to-ingress-public" {
-  count = var.enable-heat ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-heat ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.heat[count.index].name
@@ -782,8 +782,8 @@ resource "juju_integration" "heat-to-ingress-public" {
 }
 
 resource "juju_integration" "heat-to-ingress-internal" {
-  count = var.enable-heat ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-heat ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.heat[count.index].name
@@ -802,7 +802,7 @@ module "aodh" {
   source                                = "./modules/openstack-api"
   charm                                 = "aodh-k8s"
   name                                  = "aodh"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.aodh-channel == null ? var.openstack-channel : var.aodh-channel
   revision                              = var.aodh-revision
   rabbitmq                              = module.rabbitmq.name
@@ -827,7 +827,7 @@ module "gnocchi" {
   source                                = "./modules/openstack-api"
   charm                                 = "gnocchi-k8s"
   name                                  = "gnocchi"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.gnocchi-channel == null ? var.openstack-channel : var.gnocchi-channel
   revision                              = var.gnocchi-revision
   mysql                                 = local.mysql["gnocchi"]
@@ -848,8 +848,8 @@ module "gnocchi" {
 
 # juju integrate gnocchi microceph
 resource "juju_integration" "gnocchi-to-ceph" {
-  count = var.enable-telemetry ? length(data.juju_offer.microceph) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry ? length(data.juju_offer.microceph) : 0
+  model_uuid = juju_model.sunbeam.uuid
   application {
     name     = module.gnocchi[count.index].name
     endpoint = "ceph"
@@ -860,9 +860,9 @@ resource "juju_integration" "gnocchi-to-ceph" {
 }
 
 resource "juju_application" "ceilometer" {
-  count = var.enable-telemetry ? 1 : 0
-  name  = "ceilometer"
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry ? 1 : 0
+  name       = "ceilometer"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "ceilometer-k8s"
@@ -876,8 +876,8 @@ resource "juju_application" "ceilometer" {
 }
 
 resource "juju_integration" "ceilometer-to-rabbitmq" {
-  count = var.enable-telemetry ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.ceilometer[count.index].name
@@ -891,8 +891,8 @@ resource "juju_integration" "ceilometer-to-rabbitmq" {
 }
 
 resource "juju_integration" "ceilometer-to-keystone" {
-  count = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -906,8 +906,8 @@ resource "juju_integration" "ceilometer-to-keystone" {
 }
 
 resource "juju_integration" "ceilometer-to-keystone-external" {
-  count = var.enable-telemetry && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-keystone-offer-url
@@ -921,8 +921,8 @@ resource "juju_integration" "ceilometer-to-keystone-external" {
 }
 
 resource "juju_integration" "ceilometer-to-keystone-cacert" {
-  count = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -936,8 +936,8 @@ resource "juju_integration" "ceilometer-to-keystone-cacert" {
 }
 
 resource "juju_integration" "ceilometer-to-keystone-cacert-external" {
-  count = var.enable-telemetry && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-cert-distributor-offer-url
@@ -952,8 +952,8 @@ resource "juju_integration" "ceilometer-to-keystone-cacert-external" {
 
 
 resource "juju_integration" "ceilometer-to-gnocchi" {
-  count = var.enable-telemetry ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.gnocchi[count.index].name
@@ -967,8 +967,8 @@ resource "juju_integration" "ceilometer-to-gnocchi" {
 }
 
 resource "juju_integration" "ceilometer-to-logging" {
-  count = (local.observability-agent-name != null && length(juju_application.ceilometer) > 0) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (local.observability-agent-name != null && length(juju_application.ceilometer) > 0) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.ceilometer[count.index].name
@@ -983,15 +983,15 @@ resource "juju_integration" "ceilometer-to-logging" {
 
 resource "juju_offer" "ceilometer-offer" {
   count            = var.enable-telemetry ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.ceilometer[count.index].name
   endpoints        = ["ceilometer-service"]
 }
 
 resource "juju_application" "openstack-exporter" {
-  count = var.enable-telemetry ? 1 : 0
-  name  = "openstack-exporter"
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry ? 1 : 0
+  name       = "openstack-exporter"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "openstack-exporter-k8s"
@@ -1005,8 +1005,8 @@ resource "juju_application" "openstack-exporter" {
 }
 
 resource "juju_integration" "openstack-exporter-to-keystone" {
-  count = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -1020,8 +1020,8 @@ resource "juju_integration" "openstack-exporter-to-keystone" {
 }
 
 resource "juju_integration" "openstack-exporter-to-keystone-external" {
-  count = var.enable-telemetry && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-keystone-ops-offer-url
@@ -1035,8 +1035,8 @@ resource "juju_integration" "openstack-exporter-to-keystone-external" {
 }
 
 resource "juju_integration" "openstack-exporter-to-keystone-cacert" {
-  count = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -1050,8 +1050,8 @@ resource "juju_integration" "openstack-exporter-to-keystone-cacert" {
 }
 
 resource "juju_integration" "openstack-exporter-to-keystone-cacert-external" {
-  count = var.enable-telemetry && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-telemetry && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-cert-distributor-offer-url
@@ -1065,8 +1065,8 @@ resource "juju_integration" "openstack-exporter-to-keystone-cacert-external" {
 }
 
 resource "juju_integration" "openstack-exporter-to-metrics-endpoint" {
-  count = (var.enable-telemetry && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-telemetry && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.openstack-exporter[count.index].name
@@ -1080,8 +1080,8 @@ resource "juju_integration" "openstack-exporter-to-metrics-endpoint" {
 }
 
 resource "juju_integration" "openstack-exporter-to-grafana-dashboard" {
-  count = (var.enable-telemetry && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-telemetry && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.openstack-exporter[count.index].name
@@ -1095,8 +1095,8 @@ resource "juju_integration" "openstack-exporter-to-grafana-dashboard" {
 }
 
 resource "juju_integration" "openstack-exporter-to-logging" {
-  count = (local.observability-agent-name != null && length(juju_application.openstack-exporter) > 0) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (local.observability-agent-name != null && length(juju_application.openstack-exporter) > 0) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.openstack-exporter[count.index].name
@@ -1115,7 +1115,7 @@ module "octavia" {
   source                                = "./modules/openstack-api"
   charm                                 = "octavia-k8s"
   name                                  = "octavia"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.octavia-channel == null ? var.openstack-channel : var.octavia-channel
   revision                              = var.octavia-revision
   trust                                 = true
@@ -1140,8 +1140,8 @@ module "octavia" {
 
 # juju integrate ovn-central octavia
 resource "juju_integration" "ovn-central-to-octavia" {
-  count = var.enable-octavia && !local.is-ovn-external ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-octavia && !local.is-ovn-external ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ovn[0].name
@@ -1155,8 +1155,8 @@ resource "juju_integration" "ovn-central-to-octavia" {
 }
 
 resource "juju_integration" "ovn-external-to-octavia" {
-  count = var.enable-octavia && local.is-ovn-external ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-octavia && local.is-ovn-external ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-ovsdb-cms-offer-url
@@ -1172,8 +1172,8 @@ resource "juju_integration" "ovn-external-to-octavia" {
 
 # juju integrate octavia certificates
 resource "juju_integration" "octavia-to-ca" {
-  count = var.enable-octavia ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-octavia ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.octavia[count.index].name
@@ -1188,8 +1188,8 @@ resource "juju_integration" "octavia-to-ca" {
 
 # juju integrate octavia barbican
 resource "juju_integration" "octavia-to-barbican" {
-  count = (var.enable-octavia && var.enable-barbican) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-octavia && var.enable-barbican) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.octavia[count.index].name
@@ -1204,8 +1204,8 @@ resource "juju_integration" "octavia-to-barbican" {
 
 # juju integrate octavia manual-tls-certificates amphora_issuing_ca
 resource "juju_integration" "octavia-to-ca_amphora_issuing_ca" {
-  count = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = var.octavia-to-tls-provider
@@ -1220,8 +1220,8 @@ resource "juju_integration" "octavia-to-ca_amphora_issuing_ca" {
 
 # juju integrate octavia manual-tls-certificates amphora_controller_cert
 resource "juju_integration" "octavia-to-ca_amphora_controller_cert" {
-  count = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-octavia && var.octavia-to-tls-provider != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = var.octavia-to-tls-provider
@@ -1235,10 +1235,10 @@ resource "juju_integration" "octavia-to-ca_amphora_controller_cert" {
 }
 
 resource "juju_application" "bind" {
-  count = var.enable-designate ? 1 : 0
-  name  = "bind"
-  trust = true
-  model = juju_model.sunbeam.name
+  count      = var.enable-designate ? 1 : 0
+  name       = "bind"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "designate-bind-k8s"
@@ -1252,8 +1252,8 @@ resource "juju_application" "bind" {
 }
 
 resource "juju_integration" "bind-to-logging" {
-  count = (local.observability-agent-name != null && length(juju_application.bind) > 0) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (local.observability-agent-name != null && length(juju_application.bind) > 0) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.bind[count.index].name
@@ -1272,7 +1272,7 @@ module "designate" {
   source                                = "./modules/openstack-api"
   charm                                 = "designate-k8s"
   name                                  = "designate"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.designate-channel == null ? var.openstack-channel : var.designate-channel
   revision                              = var.designate-revision
   rabbitmq                              = module.rabbitmq.name
@@ -1293,8 +1293,8 @@ module "designate" {
 }
 
 resource "juju_integration" "designate-to-bind" {
-  count = var.enable-designate ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-designate ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.designate[count.index].name
@@ -1308,8 +1308,8 @@ resource "juju_integration" "designate-to-bind" {
 }
 
 resource "juju_integration" "designate-to-neutron" {
-  count = var.enable-designate ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-designate ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.designate[count.index].name
@@ -1323,10 +1323,10 @@ resource "juju_integration" "designate-to-neutron" {
 }
 
 resource "juju_application" "vault" {
-  count = var.enable-vault ? 1 : 0
-  model = juju_model.sunbeam.name
-  name  = "vault"
-  trust = true
+  count      = var.enable-vault ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+  name       = "vault"
+  trust      = true
 
   charm {
     name     = "vault-k8s"
@@ -1345,7 +1345,7 @@ module "barbican" {
   source                                = "./modules/openstack-api"
   charm                                 = "barbican-k8s"
   name                                  = "barbican"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.barbican-channel == null ? var.openstack-channel : var.barbican-channel
   revision                              = var.barbican-revision
   rabbitmq                              = module.rabbitmq.name
@@ -1367,8 +1367,8 @@ module "barbican" {
 }
 
 resource "juju_integration" "barbican-to-vault" {
-  count = (var.enable-barbican && var.enable-vault) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-barbican && var.enable-vault) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.barbican[count.index].name
@@ -1383,7 +1383,7 @@ resource "juju_integration" "barbican-to-vault" {
 
 resource "juju_offer" "barbican-offer" {
   count            = var.enable-barbican ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = module.barbican[count.index].name
   endpoints        = ["barbican-service"]
 }
@@ -1395,7 +1395,7 @@ module "ironic" {
   source               = "./modules/openstack-api"
   charm                = "ironic-k8s"
   name                 = "ironic"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   channel              = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
   revision             = var.ironic-revision
   rabbitmq             = module.rabbitmq.name
@@ -1418,7 +1418,7 @@ module "nova-ironic" {
   source               = "./modules/openstack-api"
   charm                = "nova-ironic-k8s"
   name                 = "nova-ironic"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
   revision             = var.nova-ironic-revision
   rabbitmq             = module.rabbitmq.name
@@ -1439,7 +1439,7 @@ module "ironic-conductor" {
   source               = "./modules/openstack-api"
   charm                = "ironic-conductor-k8s"
   name                 = "ironic-conductor"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   trust                = true
   channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
   revision             = var.ironic-conductor-revision
@@ -1456,8 +1456,8 @@ module "ironic-conductor" {
 }
 
 resource "juju_integration" "ironic-to-ingress-internal" {
-  count = (var.enable-ironic) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic[count.index].name
@@ -1471,8 +1471,8 @@ resource "juju_integration" "ironic-to-ingress-internal" {
 }
 
 resource "juju_integration" "nova-ironic-to-ingress-internal" {
-  count = (var.enable-ironic) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.nova-ironic[count.index].name
@@ -1486,8 +1486,8 @@ resource "juju_integration" "nova-ironic-to-ingress-internal" {
 }
 
 resource "juju_integration" "ironic-to-nova-ironic" {
-  count = (var.enable-ironic) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic[count.index].name
@@ -1501,8 +1501,8 @@ resource "juju_integration" "ironic-to-nova-ironic" {
 }
 
 resource "juju_integration" "ironic-to-neutron" {
-  count = (var.enable-ironic) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic[count.index].name
@@ -1517,8 +1517,8 @@ resource "juju_integration" "ironic-to-neutron" {
 
 # juju integrate ironic-conductor:ceph-rgw-ready microceph:ceph-rgw-ready
 resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
-  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic-conductor[count.index].name
@@ -1532,8 +1532,8 @@ resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
 
 # juju integrate glance:ceph-rgw-ready microceph:ceph-rgw-ready
 resource "juju_integration" "glance-to-ceph-rgw" {
-  count = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.glance.name
@@ -1551,7 +1551,7 @@ module "nova-ironic-shards" {
   source               = "./modules/openstack-api"
   charm                = "nova-ironic-k8s"
   name                 = "nova-ironic-${each.key}"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
   revision             = var.nova-ironic-revision
   rabbitmq             = module.rabbitmq.name
@@ -1567,8 +1567,8 @@ module "nova-ironic-shards" {
 }
 
 resource "juju_integration" "ironic-to-nova-ironic-shards" {
-  for_each = var.enable-ironic ? var.ironic-compute-shards : {}
-  model    = juju_model.sunbeam.name
+  for_each   = var.enable-ironic ? var.ironic-compute-shards : {}
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic[0].name
@@ -1582,8 +1582,8 @@ resource "juju_integration" "ironic-to-nova-ironic-shards" {
 }
 
 resource "juju_integration" "nova-ironic-shards-to-ingress-internal" {
-  for_each = var.enable-ironic ? var.ironic-compute-shards : {}
-  model    = juju_model.sunbeam.name
+  for_each   = var.enable-ironic ? var.ironic-compute-shards : {}
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.nova-ironic-shards[each.key].name
@@ -1602,7 +1602,7 @@ module "ironic-conductor-groups" {
   source               = "./modules/openstack-api"
   charm                = "ironic-conductor-k8s"
   name                 = "ironic-conductor-${each.key}"
-  model                = juju_model.sunbeam.name
+  model-uuid           = juju_model.sunbeam.uuid
   trust                = true
   channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
   revision             = var.ironic-conductor-revision
@@ -1619,8 +1619,8 @@ module "ironic-conductor-groups" {
 
 # juju integrate ironic-conductor-<group>:ceph-rgw-ready microceph:ceph-rgw-ready
 resource "juju_integration" "ironic-conductor-groups-to-ceph-rgw" {
-  for_each = var.enable-ironic ? var.ironic-conductor-groups : {}
-  model    = juju_model.sunbeam.name
+  for_each   = var.enable-ironic ? var.ironic-conductor-groups : {}
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.ironic-conductor-groups[each.key].name
@@ -1633,9 +1633,9 @@ resource "juju_integration" "ironic-conductor-groups-to-ceph-rgw" {
 }
 
 resource "juju_application" "neutron-baremetal-switch-config" {
-  count = var.enable-ironic ? 1 : 0
-  name  = "neutron-baremetal-switch-config"
-  model = juju_model.sunbeam.name
+  count      = var.enable-ironic ? 1 : 0
+  name       = "neutron-baremetal-switch-config"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "neutron-baremetal-switch-config-k8s"
@@ -1652,9 +1652,9 @@ resource "juju_application" "neutron-baremetal-switch-config" {
 }
 
 resource "juju_application" "neutron-generic-switch-config" {
-  count = var.enable-ironic ? 1 : 0
-  name  = "neutron-generic-switch-config"
-  model = juju_model.sunbeam.name
+  count      = var.enable-ironic ? 1 : 0
+  name       = "neutron-generic-switch-config"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "neutron-generic-switch-config-k8s"
@@ -1671,8 +1671,8 @@ resource "juju_application" "neutron-generic-switch-config" {
 }
 
 resource "juju_integration" "neutron-to-baremetal-switch-config" {
-  count = (var.enable-ironic && var.netconf-conf-secrets != "") ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic && var.netconf-conf-secrets != "") ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.neutron.name
@@ -1686,8 +1686,8 @@ resource "juju_integration" "neutron-to-baremetal-switch-config" {
 }
 
 resource "juju_integration" "neutron-to-generic-switch-config" {
-  count = (var.enable-ironic && var.generic-conf-secrets != "") ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ironic && var.generic-conf-secrets != "") ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.neutron.name
@@ -1706,7 +1706,7 @@ module "magnum" {
   source                                = "./modules/openstack-api"
   charm                                 = "magnum-k8s"
   name                                  = "magnum"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.magnum-channel == null ? var.openstack-channel : var.magnum-channel
   revision                              = var.magnum-revision
   rabbitmq                              = module.rabbitmq.name
@@ -1734,7 +1734,7 @@ module "manila" {
   source                                = "./modules/openstack-api"
   charm                                 = "manila-k8s"
   name                                  = "manila"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.manila-channel == null ? var.openstack-channel : var.manila-channel
   revision                              = var.manila-revision
   rabbitmq                              = module.rabbitmq.name
@@ -1759,7 +1759,7 @@ module "manila-cephfs" {
   source                      = "./modules/openstack-api"
   charm                       = "manila-cephfs-k8s"
   name                        = "manila-cephfs"
-  model                       = juju_model.sunbeam.name
+  model-uuid                  = juju_model.sunbeam.uuid
   channel                     = var.manila-cephfs-channel == null ? var.openstack-channel : var.manila-cephfs-channel
   revision                    = var.manila-cephfs-revision
   rabbitmq                    = module.rabbitmq.name
@@ -1774,8 +1774,8 @@ module "manila-cephfs" {
 }
 
 resource "juju_integration" "manila-cephfs-to-manila" {
-  count = (var.enable-manila && var.enable-manila-cephfs) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-manila && var.enable-manila-cephfs) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.manila-cephfs[count.index].name
@@ -1790,8 +1790,8 @@ resource "juju_integration" "manila-cephfs-to-manila" {
 
 # juju integrate manila-cephfs:ceph-nfs microceph:ceph-nfs
 resource "juju_integration" "manila-cephfs-to-ceph" {
-  count = var.enable-manila-cephfs ? length(data.juju_offer.microceph-ceph-nfs) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-manila-cephfs ? length(data.juju_offer.microceph-ceph-nfs) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.manila-cephfs[count.index].name
@@ -1805,10 +1805,10 @@ resource "juju_integration" "manila-cephfs-to-ceph" {
 
 # manila-data MySQL router
 resource "juju_application" "manila-data-mysql-router" {
-  count = var.enable-manila ? 1 : 0
-  name  = "manila-data-mysql-router"
-  trust = true
-  model = juju_model.sunbeam.name
+  count      = var.enable-manila ? 1 : 0
+  name       = "manila-data-mysql-router"
+  trust      = true
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name    = "mysql-router-k8s"
@@ -1824,7 +1824,7 @@ resource "juju_application" "manila-data-mysql-router" {
 resource "juju_integration" "manila-data-mysql-router-to-mysql" {
   count      = length(juju_application.manila-data-mysql-router)
   depends_on = [module.single-mysql, module.many-mysql]
-  model      = juju_model.sunbeam.name
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.manila-data-mysql-router[count.index].name
@@ -1839,15 +1839,15 @@ resource "juju_integration" "manila-data-mysql-router-to-mysql" {
 
 resource "juju_offer" "manila-data-database-offer" {
   count            = var.enable-manila ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.manila-data-mysql-router[count.index].name
   endpoints        = ["database"]
 }
 
 resource "juju_application" "ldap-apps" {
-  for_each = var.ldap-apps
-  name     = "keystone-ldap-${each.key}"
-  model    = var.model
+  for_each   = var.ldap-apps
+  name       = "keystone-ldap-${each.key}"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "keystone-ldap-k8s"
@@ -1861,8 +1861,8 @@ resource "juju_application" "ldap-apps" {
 }
 
 resource "juju_integration" "ldap-apps-to-logging" {
-  for_each = local.observability-agent-name != null ? var.ldap-apps : {}
-  model    = juju_model.sunbeam.name
+  for_each   = local.observability-agent-name != null ? var.ldap-apps : {}
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.ldap-apps[each.key].name
@@ -1876,8 +1876,8 @@ resource "juju_integration" "ldap-apps-to-logging" {
 }
 
 resource "juju_integration" "ldap-to-keystone" {
-  for_each = var.ldap-apps
-  model    = juju_model.sunbeam.name
+  for_each   = var.ldap-apps
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = "keystone-ldap-${each.key}"
@@ -1891,9 +1891,9 @@ resource "juju_integration" "ldap-to-keystone" {
 }
 
 resource "juju_application" "manual-tls-certificates" {
-  count = (var.traefik-to-tls-provider == "manual-tls-certificates" || var.traefik-to-tls-provider == "vault" || var.octavia-to-tls-provider == "manual-tls-certificates") ? 1 : 0
-  name  = "manual-tls-certificates"
-  model = juju_model.sunbeam.name
+  count      = (var.traefik-to-tls-provider == "manual-tls-certificates" || var.traefik-to-tls-provider == "vault" || var.octavia-to-tls-provider == "manual-tls-certificates") ? 1 : 0
+  name       = "manual-tls-certificates"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "manual-tls-certificates"
@@ -1906,8 +1906,8 @@ resource "juju_application" "manual-tls-certificates" {
 }
 
 resource "juju_integration" "manual-tls-certificates-to-vault" {
-  count = var.traefik-to-tls-provider == "vault" ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.traefik-to-tls-provider == "vault" ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = "manual-tls-certificates"
@@ -1921,8 +1921,8 @@ resource "juju_integration" "manual-tls-certificates-to-vault" {
 }
 
 resource "juju_integration" "traefik-public-to-tls-provider" {
-  count = var.enable-tls-for-public-endpoint ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-tls-for-public-endpoint ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-public.name
@@ -1936,8 +1936,8 @@ resource "juju_integration" "traefik-public-to-tls-provider" {
 }
 
 resource "juju_integration" "traefik-to-tls-provider" {
-  count = var.enable-tls-for-internal-endpoint ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-tls-for-internal-endpoint ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik.name
@@ -1951,8 +1951,8 @@ resource "juju_integration" "traefik-to-tls-provider" {
 }
 
 resource "juju_integration" "traefik-rgw-to-tls-provider" {
-  count = (var.enable-ceph && var.enable-tls-for-rgw-endpoint) ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-ceph && var.enable-tls-for-rgw-endpoint) ? (var.traefik-to-tls-provider == null ? 0 : 1) : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-rgw[count.index].name
@@ -1966,9 +1966,9 @@ resource "juju_integration" "traefik-rgw-to-tls-provider" {
 }
 
 resource "juju_application" "tempest" {
-  count = var.enable-validation ? 1 : 0
-  name  = "tempest"
-  model = juju_model.sunbeam.name
+  count      = var.enable-validation ? 1 : 0
+  name       = "tempest"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "tempest-k8s"
@@ -1982,8 +1982,8 @@ resource "juju_application" "tempest" {
 }
 
 resource "juju_integration" "tempest-to-keystone" {
-  count = var.enable-validation && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-validation && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -1997,8 +1997,8 @@ resource "juju_integration" "tempest-to-keystone" {
 }
 
 resource "juju_integration" "tempest-to-keystone-external" {
-  count = var.enable-validation && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-validation && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-keystone-ops-offer-url
@@ -2012,8 +2012,8 @@ resource "juju_integration" "tempest-to-keystone-external" {
 }
 
 resource "juju_integration" "tempest-to-keystone-cacert" {
-  count = var.enable-validation && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-validation && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -2028,8 +2028,8 @@ resource "juju_integration" "tempest-to-keystone-cacert" {
 
 
 resource "juju_integration" "tempest-to-keystone-cacert-external" {
-  count = var.enable-validation && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-validation && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-cert-distributor-offer-url
@@ -2043,8 +2043,8 @@ resource "juju_integration" "tempest-to-keystone-cacert-external" {
 }
 
 resource "juju_integration" "tempest-to-observability-agent-loki" {
-  count = (var.enable-validation && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-validation && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.tempest[count.index].name
@@ -2058,8 +2058,8 @@ resource "juju_integration" "tempest-to-observability-agent-loki" {
 }
 
 resource "juju_integration" "tempest-to-observability-agent-grafana" {
-  count = (var.enable-validation && var.enable-observability) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-validation && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.tempest[count.index].name
@@ -2073,10 +2073,10 @@ resource "juju_integration" "tempest-to-observability-agent-grafana" {
 }
 
 resource "juju_application" "observability-agent" {
-  count = var.enable-observability ? 1 : 0
-  name  = "opentelemetry-collector"
-  model = juju_model.sunbeam.name
-  trust = true
+  count      = var.enable-observability ? 1 : 0
+  name       = "opentelemetry-collector"
+  model_uuid = juju_model.sunbeam.uuid
+  trust      = true
 
 
   charm {
@@ -2091,8 +2091,8 @@ resource "juju_application" "observability-agent" {
 }
 
 resource "juju_integration" "observability-agent-to-receive-remote-write" {
-  count = (var.enable-observability && var.receive-remote-write-offer-url != null) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-observability && var.receive-remote-write-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.observability-agent[count.index].name
@@ -2106,8 +2106,8 @@ resource "juju_integration" "observability-agent-to-receive-remote-write" {
 }
 
 resource "juju_integration" "observability-agent-to-logging" {
-  count = (var.enable-observability && var.logging-offer-url != null) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-observability && var.logging-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.observability-agent[count.index].name
@@ -2120,8 +2120,8 @@ resource "juju_integration" "observability-agent-to-logging" {
 }
 
 resource "juju_integration" "observability-agent-to-cos-grafana" {
-  count = (var.enable-observability && var.grafana-dashboard-offer-url != null) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-observability && var.grafana-dashboard-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.observability-agent[count.index].name
@@ -2134,9 +2134,9 @@ resource "juju_integration" "observability-agent-to-cos-grafana" {
 }
 
 resource "juju_application" "images-sync" {
-  count = var.enable-images-sync ? 1 : 0
-  name  = "images-sync"
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync ? 1 : 0
+  name       = "images-sync"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "openstack-images-sync-k8s"
@@ -2150,8 +2150,8 @@ resource "juju_application" "images-sync" {
 }
 
 resource "juju_integration" "images-sync-to-keystone" {
-  count = var.enable-images-sync && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -2165,8 +2165,8 @@ resource "juju_integration" "images-sync-to-keystone" {
 }
 
 resource "juju_integration" "images-sync-to-keystone-external" {
-  count = var.enable-images-sync && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-keystone-endpoints-offer-url
@@ -2180,8 +2180,8 @@ resource "juju_integration" "images-sync-to-keystone-external" {
 }
 
 resource "juju_integration" "images-sync-to-traefik-internal" {
-  count = var.enable-images-sync ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik.name
@@ -2195,8 +2195,8 @@ resource "juju_integration" "images-sync-to-traefik-internal" {
 }
 
 resource "juju_integration" "images-sync-to-traefik-public" {
-  count = var.enable-images-sync ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.traefik-public.name
@@ -2210,8 +2210,8 @@ resource "juju_integration" "images-sync-to-traefik-public" {
 }
 
 resource "juju_integration" "images-sync-to-keystone-cacert" {
-  count = var.enable-images-sync && !var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync && !var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -2225,8 +2225,8 @@ resource "juju_integration" "images-sync-to-keystone-cacert" {
 }
 
 resource "juju_integration" "images-sync-to-keystone-cacert-external" {
-  count = var.enable-images-sync && var.is-secondary-region ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = var.enable-images-sync && var.is-secondary-region ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     offer_url = var.external-cert-distributor-offer-url
@@ -2240,8 +2240,8 @@ resource "juju_integration" "images-sync-to-keystone-cacert-external" {
 }
 
 resource "juju_integration" "images-sync-to-logging" {
-  count = (local.observability-agent-name != null && length(juju_application.images-sync) > 0) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (local.observability-agent-name != null && length(juju_application.images-sync) > 0) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = juju_application.images-sync[count.index].name
@@ -2260,7 +2260,7 @@ module "watcher" {
   source                                = "./modules/openstack-api"
   charm                                 = "watcher-k8s"
   name                                  = "watcher"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.watcher-channel == null ? var.openstack-channel : var.watcher-channel
   revision                              = var.watcher-revision
   rabbitmq                              = module.rabbitmq.name
@@ -2281,8 +2281,8 @@ module "watcher" {
 }
 
 resource "juju_integration" "watcher-to-gnocchi" {
-  count = (var.enable-watcher && var.enable-telemetry) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-watcher && var.enable-telemetry) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.gnocchi[count.index].name
@@ -2298,7 +2298,7 @@ resource "juju_integration" "watcher-to-gnocchi" {
 module "consul-management" {
   count             = var.enable-consul-management ? 1 : 0
   source            = "./modules/consul"
-  model             = juju_model.sunbeam.name
+  model-uuid        = juju_model.sunbeam.uuid
   name              = "consul-management"
   scale             = var.ha-scale
   channel           = var.consul-channel
@@ -2310,7 +2310,7 @@ module "consul-management" {
 module "consul-tenant" {
   count             = var.enable-consul-tenant ? 1 : 0
   source            = "./modules/consul"
-  model             = juju_model.sunbeam.name
+  model-uuid        = juju_model.sunbeam.uuid
   name              = "consul-tenant"
   scale             = var.ha-scale
   channel           = var.consul-channel
@@ -2322,7 +2322,7 @@ module "consul-tenant" {
 module "consul-storage" {
   count             = var.enable-consul-storage ? 1 : 0
   source            = "./modules/consul"
-  model             = juju_model.sunbeam.name
+  model-uuid        = juju_model.sunbeam.uuid
   name              = "consul-storage"
   scale             = var.ha-scale
   channel           = var.consul-channel
@@ -2337,7 +2337,7 @@ module "masakari" {
   source                                = "./modules/openstack-api"
   charm                                 = "masakari-k8s"
   name                                  = "masakari"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.masakari-channel == null ? var.openstack-channel : var.masakari-channel
   revision                              = var.masakari-revision
   rabbitmq                              = module.rabbitmq.name
@@ -2357,8 +2357,8 @@ module "masakari" {
 }
 
 resource "juju_integration" "masakari-to-consul-management" {
-  count = (var.enable-masakari && var.enable-consul-management) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-masakari && var.enable-consul-management) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.masakari[count.index].name
@@ -2372,8 +2372,8 @@ resource "juju_integration" "masakari-to-consul-management" {
 }
 
 resource "juju_integration" "masakari-to-consul-tenant" {
-  count = (var.enable-masakari && var.enable-consul-tenant) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-masakari && var.enable-consul-tenant) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.masakari[count.index].name
@@ -2387,8 +2387,8 @@ resource "juju_integration" "masakari-to-consul-tenant" {
 }
 
 resource "juju_integration" "masakari-to-consul-storage" {
-  count = (var.enable-masakari && var.enable-consul-storage) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-masakari && var.enable-consul-storage) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.masakari[count.index].name
@@ -2403,7 +2403,7 @@ resource "juju_integration" "masakari-to-consul-storage" {
 
 resource "juju_offer" "masakari-offer" {
   count            = var.enable-masakari ? 1 : 0
-  model            = juju_model.sunbeam.name
+  model_uuid       = juju_model.sunbeam.uuid
   application_name = module.masakari[count.index].name
   endpoints        = ["masakari-service"]
 }
@@ -2414,7 +2414,7 @@ module "cloudkitty" {
   source                                = "./modules/openstack-api"
   charm                                 = "cloudkitty-k8s"
   name                                  = "cloudkitty"
-  model                                 = juju_model.sunbeam.name
+  model-uuid                            = juju_model.sunbeam.uuid
   channel                               = var.cloudkitty-channel == null ? var.openstack-channel : var.cloudkitty-channel
   revision                              = var.cloudkitty-revision
   rabbitmq                              = module.rabbitmq.name
@@ -2434,8 +2434,8 @@ module "cloudkitty" {
 }
 
 resource "juju_integration" "cloudkitty-to-gnocchi" {
-  count = (var.enable-cloudkitty && var.enable-telemetry) ? 1 : 0
-  model = juju_model.sunbeam.name
+  count      = (var.enable-cloudkitty && var.enable-telemetry) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.gnocchi[count.index].name
@@ -2449,8 +2449,8 @@ resource "juju_integration" "cloudkitty-to-gnocchi" {
 }
 
 resource "juju_integration" "keystone-to-trusted-dashboard-endpoint" {
-  count = var.is-secondary-region ? 0 : 1
-  model = juju_model.sunbeam.name
+  count      = var.is-secondary-region ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = module.keystone.name
@@ -2464,9 +2464,9 @@ resource "juju_integration" "keystone-to-trusted-dashboard-endpoint" {
 }
 
 resource "juju_application" "sso-openid-providers" {
-  for_each = var.sso-providers.openid
-  name     = "keystone-idp-openid-${each.key}"
-  model    = var.model
+  for_each   = var.sso-providers.openid
+  name       = "keystone-idp-openid-${each.key}"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "kratos-external-idp-integrator"
@@ -2479,8 +2479,8 @@ resource "juju_application" "sso-openid-providers" {
 }
 
 resource "juju_integration" "sso-openid-to-keystone" {
-  for_each = var.sso-providers.openid
-  model    = juju_model.sunbeam.name
+  for_each   = var.sso-providers.openid
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = "keystone-idp-openid-${each.key}"
@@ -2494,9 +2494,9 @@ resource "juju_integration" "sso-openid-to-keystone" {
 }
 
 resource "juju_application" "sso-saml2-providers" {
-  for_each = var.sso-providers.saml2
-  name     = "keystone-idp-saml2-${each.key}"
-  model    = var.model
+  for_each   = var.sso-providers.saml2
+  name       = "keystone-idp-saml2-${each.key}"
+  model_uuid = juju_model.sunbeam.uuid
 
   charm {
     name     = "keystone-saml-k8s"
@@ -2509,8 +2509,8 @@ resource "juju_application" "sso-saml2-providers" {
 }
 
 resource "juju_integration" "sso-saml2-to-keystone" {
-  for_each = var.sso-providers.saml2
-  model    = juju_model.sunbeam.name
+  for_each   = var.sso-providers.saml2
+  model_uuid = juju_model.sunbeam.uuid
 
   application {
     name     = "keystone-idp-saml2-${each.key}"

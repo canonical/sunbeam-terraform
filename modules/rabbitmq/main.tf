@@ -19,16 +19,16 @@ terraform {
   required_providers {
     juju = {
       source  = "juju/juju"
-      version = "= 0.23.1"
+      version = "= 1.3.1"
     }
   }
 }
 
 # core rabbitmq k8s operator
 resource "juju_application" "rabbitmq" {
-  name  = var.name
-  trust = true
-  model = var.model
+  name       = var.name
+  trust      = true
+  model_uuid = var.model-uuid
 
   charm {
     name    = "rabbitmq-k8s"
@@ -47,15 +47,15 @@ resource "juju_application" "rabbitmq" {
 
 
 resource "juju_offer" "rabbitmq-offer" {
-  model            = var.model
+  model_uuid       = var.model-uuid
   application_name = juju_application.rabbitmq.name
   endpoints        = ["amqp"]
 }
 
 
 resource "juju_integration" "rabbitmq-to-logging" {
-  count = (var.logging-app != null) ? 1 : 0
-  model = var.model
+  count      = (var.logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
 
   application {
     name     = juju_application.rabbitmq.name
