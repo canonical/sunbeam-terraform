@@ -36,6 +36,12 @@ variable "base" {
   default     = "ubuntu@24.04"
 }
 
+variable "mysql-router-base" {
+  description = "Operator base for MySQL router deployment"
+  type        = string
+  default     = "ubuntu@22.04"
+}
+
 variable "mysql-router-channel" {
   description = "Operator channel for MySQL router deployment"
   type        = string

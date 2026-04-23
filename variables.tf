@@ -63,10 +63,34 @@ variable "mysql-router-channel" {
   type        = string
 }
 
+variable "base" {
+  description = "Default operator base"
+  type        = string
+  default     = "ubuntu@24.04"
+}
+
+variable "mysql-base" {
+  description = "Operator base for MySQL K8S deployment"
+  type        = string
+  default     = "ubuntu@22.04"
+}
+
+variable "mysql-router-base" {
+  description = "Operator base for MySQL router deployment"
+  default     = "ubuntu@22.04"
+  type        = string
+}
+
 variable "traefik-channel" {
   description = "Operator channel for Traefik deployment"
   type        = string
   default     = "1.0/stable"
+}
+
+variable "traefik-base" {
+  description = "Operator base for Traefik deployment"
+  type        = string
+  default     = "ubuntu@20.04"
 }
 
 variable "traefik-revision" {
@@ -694,7 +718,7 @@ variable "enable-vault" {
 variable "vault-channel" {
   description = "Operator channel for Vault deployment"
   type        = string
-  default     = "1.16/stable"
+  default     = "1.18/stable"
 }
 
 variable "vault-revision" {
@@ -1152,6 +1176,12 @@ variable "kratos-idp-channel" {
   description = "Operator channel for Kratos external integrator"
   type        = string
   default     = "0.2/stable"
+}
+
+variable "kratos-idp-base" {
+  description = "Operator base for Kratos external integrator"
+  type        = string
+  default     = "ubuntu@22.04"
 }
 
 variable "kratos-idp-revision" {
