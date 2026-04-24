@@ -77,3 +77,9 @@ variable "metrics-endpoint-app" {
   type        = string
   default     = null
 }
+
+variable "base" {
+  description = "Operator base"
+  type        = string
+  default     = "ubuntu@22.04"
+}

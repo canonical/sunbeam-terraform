@@ -51,6 +51,7 @@ resource "juju_application" "mysql-router" {
   charm {
     name    = "mysql-router-k8s"
     channel = var.mysql-router-channel
+    base    = var.mysql-router-base
   }
 
   units = var.scale
@@ -280,6 +281,7 @@ resource "juju_application" "nova-api-mysql-router" {
   charm {
     name    = "mysql-router-k8s"
     channel = var.mysql-router-channel
+    base    = var.mysql-router-base
   }
 
   units = var.scale
@@ -324,6 +326,7 @@ resource "juju_application" "nova-cell-mysql-router" {
   charm {
     name    = "mysql-router-k8s"
     channel = var.mysql-router-channel
+    base    = var.mysql-router-base
   }
 
   units = var.scale

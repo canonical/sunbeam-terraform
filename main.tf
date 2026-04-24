@@ -109,6 +109,7 @@ module "single-mysql" {
   scale                 = var.ha-scale
   resource-configs      = var.mysql-config
   resource-storages     = var.mysql-storage
+  base                  = var.mysql-base
   grafana-dashboard-app = local.observability-agent-name
   metrics-endpoint-app  = local.observability-agent-name
   logging-app           = local.observability-agent-name
@@ -124,6 +125,7 @@ module "many-mysql" {
   scale                 = var.ha-scale
   resource-configs      = merge(var.mysql-config, each.value.configs)
   resource-storages     = merge(var.mysql-storage, each.value.storages)
+  base                  = var.mysql-base
   grafana-dashboard-app = local.observability-agent-name
   metrics-endpoint-app  = local.observability-agent-name
   logging-app           = local.observability-agent-name
@@ -159,6 +161,8 @@ module "glance" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : (var.enable-ceph ? var.os-api-scale : 1)
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.glance-config, {
     ceph-osd-replication-count     = var.ceph-osd-replication-count
@@ -182,6 +186,8 @@ module "keystone" {
   ingress-public       = local.controller-public-traefik-name
   scale                = var.is-secondary-region ? 0 : var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.keystone-config, {
     enable-telemetry-notifications = var.enable-telemetry
@@ -209,6 +215,8 @@ module "nova" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.nova-config, {
     region = var.region
@@ -263,6 +271,8 @@ module "horizon" {
   ingress-public                      = local.controller-public-traefik-name
   scale                               = var.is-secondary-region ? 0 : var.os-api-scale
   mysql-router-channel                = var.mysql-router-channel
+  base                                = var.base
+  mysql-router-base                   = var.mysql-router-base
   logging-app                         = local.observability-agent-name
   resource-configs = merge(var.horizon-config, {
     plugins = jsonencode(var.horizon-plugins)
@@ -287,6 +297,8 @@ module "neutron" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.neutron-config, {
     region = var.region
@@ -310,6 +322,8 @@ module "placement" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.placement-config, {
     region = var.region
@@ -325,6 +339,7 @@ resource "juju_application" "traefik" {
     name     = "traefik-k8s"
     channel  = var.traefik-channel
     revision = var.traefik-revision
+    base     = var.traefik-base
   }
 
   config             = var.traefik-config
@@ -386,6 +401,7 @@ resource "juju_application" "traefik-public" {
     name     = "traefik-k8s"
     channel  = var.traefik-channel
     revision = var.traefik-revision
+    base     = var.traefik-base
   }
 
   config = (
@@ -452,6 +468,7 @@ resource "juju_application" "traefik-rgw" {
     name     = "traefik-k8s"
     channel  = var.traefik-channel
     revision = var.traefik-revision
+    base     = var.traefik-base
   }
 
   config = (
@@ -524,6 +541,7 @@ resource "juju_application" "certificate-authority" {
     name     = "self-signed-certificates"
     channel  = var.certificate-authority-channel
     revision = var.certificate-authority-revision
+    base     = var.base
   }
 
   config = merge(var.certificate-authority-config, {
@@ -665,6 +683,8 @@ module "cinder" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.cinder-config, {
     region = var.region
@@ -681,6 +701,7 @@ resource "juju_application" "cinder-volume-mysql-router" {
   charm {
     name    = "mysql-router-k8s"
     channel = var.mysql-router-channel
+    base    = var.mysql-router-base
   }
 
   units = var.ha-scale
@@ -760,6 +781,8 @@ module "heat" {
   ingress-public                        = ""
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.heat-config, {
     region = var.region
@@ -815,6 +838,8 @@ module "aodh" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.aodh-config, {
     region = var.region
@@ -839,6 +864,8 @@ module "gnocchi" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.gnocchi-config, {
     ceph-osd-replication-count = var.ceph-osd-replication-count
@@ -868,7 +895,7 @@ resource "juju_application" "ceilometer" {
     name     = "ceilometer-k8s"
     channel  = var.ceilometer-channel == null ? var.openstack-channel : var.ceilometer-channel
     revision = var.ceilometer-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   config = merge(var.ceilometer-config, { region = var.region })
@@ -997,7 +1024,7 @@ resource "juju_application" "openstack-exporter" {
     name     = "openstack-exporter-k8s"
     channel  = var.openstack-exporter-channel == null ? var.openstack-channel : var.openstack-exporter-channel
     revision = var.openstack-exporter-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   config = merge(var.openstack-exporter-config, { region = var.region })
@@ -1131,6 +1158,8 @@ module "octavia" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.octavia-config, {
     region = var.region
@@ -1244,7 +1273,7 @@ resource "juju_application" "bind" {
     name     = "designate-bind-k8s"
     channel  = var.bind-channel
     revision = var.bind-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   config = var.bind-config
@@ -1285,6 +1314,8 @@ module "designate" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.designate-config, {
     "nameservers" = var.nameservers
@@ -1332,6 +1363,7 @@ resource "juju_application" "vault" {
     name     = "vault-k8s"
     channel  = var.vault-channel
     revision = var.vault-revision
+    base     = var.base
   }
 
   config             = var.vault-config
@@ -1360,6 +1392,8 @@ module "barbican" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.barbican-config, {
     region = var.region
@@ -1406,6 +1440,8 @@ module "ironic" {
   ingress-public       = local.standard-public-traefik-name
   scale                = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.ironic-config, {
     region = var.region
@@ -1428,6 +1464,8 @@ module "nova-ironic" {
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : 1
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.nova-ironic-config, {
   })
@@ -1450,6 +1488,8 @@ module "ironic-conductor" {
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.ironic-conductor-config, {
   })
@@ -1561,6 +1601,8 @@ module "nova-ironic-shards" {
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : 1
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs = merge(var.nova-ironic-config, {
   })
@@ -1613,6 +1655,8 @@ module "ironic-conductor-groups" {
   ingress-public       = ""
   scale                = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel = var.mysql-router-channel
+  base                 = var.base
+  mysql-router-base    = var.mysql-router-base
   logging-app          = local.observability-agent-name
   resource-configs     = merge(var.ironic-conductor-config, each.value)
 }
@@ -1641,7 +1685,7 @@ resource "juju_application" "neutron-baremetal-switch-config" {
     name     = "neutron-baremetal-switch-config-k8s"
     channel  = var.neutron-baremetal-switch-config-channel == null ? var.openstack-channel : var.neutron-baremetal-switch-config-channel
     revision = var.neutron-baremetal-switch-config-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   # This is a config charm so 1 unit is enough
@@ -1660,7 +1704,7 @@ resource "juju_application" "neutron-generic-switch-config" {
     name     = "neutron-generic-switch-config-k8s"
     channel  = var.neutron-generic-switch-config-channel == null ? var.openstack-channel : var.neutron-generic-switch-config-channel
     revision = var.neutron-generic-switch-config-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   # This is a config charm so 1 unit is enough
@@ -1721,6 +1765,8 @@ module "magnum" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.magnum-config, {
     "cluster-user-trust" = "true"
@@ -1747,6 +1793,8 @@ module "manila" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.manila-config, {
     region = var.region
@@ -1770,6 +1818,8 @@ module "manila-cephfs" {
   ingress-public              = ""
   scale                       = var.os-api-scale
   mysql-router-channel        = var.mysql-router-channel
+  base                        = var.base
+  mysql-router-base           = var.mysql-router-base
   logging-app                 = local.observability-agent-name
 }
 
@@ -1813,6 +1863,7 @@ resource "juju_application" "manila-data-mysql-router" {
   charm {
     name    = "mysql-router-k8s"
     channel = var.mysql-router-channel
+    base    = var.mysql-router-base
   }
 
   units = var.ha-scale
@@ -1853,7 +1904,7 @@ resource "juju_application" "ldap-apps" {
     name     = "keystone-ldap-k8s"
     channel  = var.ldap-channel
     revision = var.ldap-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
   # This is a config charm so 1 unit is enough
   units  = 1
@@ -1899,6 +1950,7 @@ resource "juju_application" "manual-tls-certificates" {
     name     = "manual-tls-certificates"
     channel  = var.manual-tls-certificates-channel
     revision = var.manual-tls-certificates-revision
+    base     = var.base
   }
 
   units  = 1 # does not scale
@@ -1974,7 +2026,7 @@ resource "juju_application" "tempest" {
     name     = "tempest-k8s"
     channel  = var.tempest-channel == null ? var.openstack-channel : var.tempest-channel
     revision = var.tempest-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   units  = 1
@@ -2081,7 +2133,7 @@ resource "juju_application" "observability-agent" {
 
   charm {
     name     = "opentelemetry-collector-k8s"
-    base     = "ubuntu@24.04"
+    base     = var.base
     channel  = var.opentelemetry-collector-channel
     revision = var.opentelemetry-collector-revision
   }
@@ -2142,7 +2194,7 @@ resource "juju_application" "images-sync" {
     name     = "openstack-images-sync-k8s"
     channel  = var.images-sync-channel == null ? var.openstack-channel : var.images-sync-channel
     revision = var.images-sync-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
 
   units  = 1
@@ -2273,6 +2325,8 @@ module "watcher" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.watcher-config, {
     enable-telemetry-notifications = var.enable-telemetry
@@ -2350,6 +2404,8 @@ module "masakari" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.masakari-config, {
     region = var.region
@@ -2427,6 +2483,8 @@ module "cloudkitty" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  base                                  = var.base
+  mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
   resource-configs = merge(var.cloudkitty-config, {
     region = var.region
@@ -2472,7 +2530,7 @@ resource "juju_application" "sso-openid-providers" {
     name     = "kratos-external-idp-integrator"
     channel  = var.kratos-idp-channel
     revision = var.kratos-idp-revision
-    base     = "ubuntu@22.04"
+    base     = var.kratos-idp-base
   }
   units  = 1
   config = each.value
@@ -2502,7 +2560,7 @@ resource "juju_application" "sso-saml2-providers" {
     name     = "keystone-saml-k8s"
     channel  = var.keystone-saml-channel == null ? var.openstack-channel : var.keystone-saml-channel
     revision = var.keystone-saml-revision
-    base     = "ubuntu@24.04"
+    base     = var.base
   }
   units  = 1
   config = each.value
