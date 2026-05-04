@@ -342,7 +342,7 @@ resource "juju_application" "traefik" {
     base     = var.traefik-base
   }
 
-  config             = var.traefik-config
+  config             = merge(var.traefik-config, lookup(var.traefik-config-map, "traefik", {}))
   storage_directives = var.traefik-storage
   units              = var.ingress-scale
 }
@@ -404,10 +404,9 @@ resource "juju_application" "traefik-public" {
     base     = var.traefik-base
   }
 
-  config = (
-    var.traefik-public-config != {}
-    ? var.traefik-public-config
-    : var.traefik-config
+  config = merge(
+    var.traefik-public-config != {} ? var.traefik-public-config : var.traefik-config,
+    lookup(var.traefik-config-map, "traefik-public", {})
   )
   storage_directives = var.traefik-storage
   units              = var.ingress-scale
@@ -471,10 +470,9 @@ resource "juju_application" "traefik-rgw" {
     base     = var.traefik-base
   }
 
-  config = (
-    var.traefik-rgw-config != {}
-    ? var.traefik-rgw-config
-    : var.traefik-config
+  config = merge(
+    var.traefik-rgw-config != {} ? var.traefik-rgw-config : var.traefik-config,
+    lookup(var.traefik-config-map, "traefik-rgw", {})
   )
   storage_directives = var.traefik-storage
   units              = var.ingress-scale

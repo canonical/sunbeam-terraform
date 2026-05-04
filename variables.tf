@@ -116,6 +116,12 @@ variable "traefik-rgw-config" {
   default     = {}
 }
 
+variable "traefik-config-map" {
+  description = "Operator configs for specific Traefik deployment (applied on top of traefik-config for specific application)"
+  type        = map(map(string))
+  default     = {}
+}
+
 variable "traefik-storage" {
   description = "Operator storage directives for Traefik deployment"
   type        = map(string)
