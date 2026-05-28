@@ -16,7 +16,7 @@
 variable "openstack-channel" {
   description = "Operator channel for OpenStack deployment"
   type        = string
-  default     = "2024.1/stable"
+  default     = "2026.1/stable"
 }
 
 variable "mysql-channel" {
@@ -173,7 +173,7 @@ variable "certificate-authority-config" {
 variable "ovn-channel" {
   description = "Operator channel for OVN deployment"
   type        = string
-  default     = "24.03/stable"
+  default     = "26.03/stable"
 }
 
 variable "ovn-central-channel" {
@@ -959,7 +959,7 @@ variable "manila-cephfs-config" {
 variable "ldap-channel" {
   description = "Operator channel for Keystone LDAP deployment"
   type        = string
-  default     = "2024.1/stable"
+  default     = "2026.1/stable"
 }
 
 variable "ldap-revision" {
@@ -1269,7 +1269,7 @@ variable "enable-cloudkitty" {
 variable "cloudkitty-channel" {
   description = "Operator channel for Cloudkitty deployment"
   type        = string
-  default     = "2025.1/edge"
+  default     = "2026.1/stable"
 }
 
 variable "cloudkitty-revision" {

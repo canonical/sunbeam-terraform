@@ -253,6 +253,21 @@ resource "juju_integration" "nova-to-ingress-internal" {
   }
 }
 
+resource "juju_integration" "nova-to-ingress-metadata" {
+  count      = var.is-region-controller ? 0 : 1
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.nova.name
+    endpoint = "ingress-metadata"
+  }
+
+  application {
+    name     = juju_application.traefik.name
+    endpoint = "ingress"
+  }
+}
+
 module "horizon" {
   depends_on                          = [module.single-mysql, module.many-mysql]
   source                              = "./modules/openstack-api"
