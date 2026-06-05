@@ -59,3 +59,15 @@ variable "logging-app" {
   type        = string
   default     = null
 }
+
+variable "grafana-dashboard-app" {
+  description = "Name of application providing grafana-dashboard endpoint"
+  type        = string
+  default     = null
+}
+
+variable "metrics-endpoint-app" {
+  description = "Name of application providing metrics-endpoint endpoint"
+  type        = string
+  default     = null
+}

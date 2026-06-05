@@ -67,3 +67,33 @@ resource "juju_integration" "rabbitmq-to-logging" {
     endpoint = "receive-loki-logs"
   }
 }
+
+resource "juju_integration" "rabbitmq-to-grafana-dashboard" {
+  count      = (var.grafana-dashboard-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.rabbitmq.name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = var.grafana-dashboard-app
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
+resource "juju_integration" "rabbitmq-to-metrics-endpoint" {
+  count      = (var.metrics-endpoint-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.rabbitmq.name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = var.metrics-endpoint-app
+    endpoint = "metrics-endpoint"
+  }
+}
