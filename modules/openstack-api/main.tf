@@ -377,6 +377,141 @@ resource "juju_integration" "service-to-logging" {
   }
 }
 
+resource "juju_integration" "mysql-router-to-logging" {
+  count      = (var.mysql-router-logging-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.mysql-router.name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = var.mysql-router-logging-app
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "mysql-router-to-metrics-endpoint" {
+  count      = (var.mysql-router-metrics-endpoint-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.mysql-router.name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = var.mysql-router-metrics-endpoint-app
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "mysql-router-to-grafana-dashboard" {
+  count      = (var.mysql-router-grafana-dashboard-app != null) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.mysql-router.name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = var.mysql-router-grafana-dashboard-app
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
+resource "juju_integration" "nova-api-mysql-router-to-logging" {
+  count      = (var.mysql-router-logging-app != null && length(juju_application.nova-api-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-api-mysql-router[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = var.mysql-router-logging-app
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "nova-api-mysql-router-to-metrics-endpoint" {
+  count      = (var.mysql-router-metrics-endpoint-app != null && length(juju_application.nova-api-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-api-mysql-router[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = var.mysql-router-metrics-endpoint-app
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "nova-api-mysql-router-to-grafana-dashboard" {
+  count      = (var.mysql-router-grafana-dashboard-app != null && length(juju_application.nova-api-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-api-mysql-router[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = var.mysql-router-grafana-dashboard-app
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
+resource "juju_integration" "nova-cell-mysql-router-to-logging" {
+  count      = (var.mysql-router-logging-app != null && length(juju_application.nova-cell-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-cell-mysql-router[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = var.mysql-router-logging-app
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "nova-cell-mysql-router-to-metrics-endpoint" {
+  count      = (var.mysql-router-metrics-endpoint-app != null && length(juju_application.nova-cell-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-cell-mysql-router[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = var.mysql-router-metrics-endpoint-app
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "nova-cell-mysql-router-to-grafana-dashboard" {
+  count      = (var.mysql-router-grafana-dashboard-app != null && length(juju_application.nova-cell-mysql-router) > 0) ? 1 : 0
+  model_uuid = var.model-uuid
+
+  application {
+    name     = juju_application.nova-cell-mysql-router[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = var.mysql-router-grafana-dashboard-app
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
 # As a workaroud for bug
 # https://github.com/juju/terraform-provider-juju/issues/787,
 # the endpoints for keystone application are not

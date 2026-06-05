@@ -52,7 +52,8 @@ locals {
   mysql = {
     for k, v in local.mysql-services : k => v != null ? "${k}-mysql" : local.single-mysql
   }
-  observability-agent-name = length(juju_application.observability-agent) > 0 ? juju_application.observability-agent[0].name : null
+  observability-agent-name       = length(juju_application.observability-agent) > 0 ? juju_application.observability-agent[0].name : null
+  observability-agent-infra-name = length(juju_application.observability-agent-infra) > 0 ? juju_application.observability-agent-infra[0].name : null
   # The name of the Keystone application belonging to this cluster, used for Juju integrations.
   # In multi-region environments, Keystone will only run on the region controller
   # and the secondary region will consume the external Juju offers.
@@ -110,9 +111,9 @@ module "single-mysql" {
   resource-configs      = var.mysql-config
   resource-storages     = var.mysql-storage
   base                  = var.mysql-base
-  grafana-dashboard-app = local.observability-agent-name
-  metrics-endpoint-app  = local.observability-agent-name
-  logging-app           = local.observability-agent-name
+  grafana-dashboard-app = local.observability-agent-infra-name
+  metrics-endpoint-app  = local.observability-agent-infra-name
+  logging-app           = local.observability-agent-infra-name
 }
 
 module "many-mysql" {
@@ -126,20 +127,22 @@ module "many-mysql" {
   resource-configs      = merge(var.mysql-config, each.value.configs)
   resource-storages     = merge(var.mysql-storage, each.value.storages)
   base                  = var.mysql-base
-  grafana-dashboard-app = local.observability-agent-name
-  metrics-endpoint-app  = local.observability-agent-name
-  logging-app           = local.observability-agent-name
+  grafana-dashboard-app = local.observability-agent-infra-name
+  metrics-endpoint-app  = local.observability-agent-infra-name
+  logging-app           = local.observability-agent-infra-name
 }
 
 module "rabbitmq" {
-  source            = "./modules/rabbitmq"
-  model-uuid        = juju_model.sunbeam.uuid
-  scale             = var.ha-scale
-  channel           = var.rabbitmq-channel
-  revision          = var.rabbitmq-revision
-  resource-configs  = var.rabbitmq-config
-  resource-storages = var.rabbitmq-storage
-  logging-app       = local.observability-agent-name
+  source                = "./modules/rabbitmq"
+  model-uuid            = juju_model.sunbeam.uuid
+  scale                 = var.ha-scale
+  channel               = var.rabbitmq-channel
+  revision              = var.rabbitmq-revision
+  resource-configs      = var.rabbitmq-config
+  resource-storages     = var.rabbitmq-storage
+  logging-app           = local.observability-agent-infra-name
+  grafana-dashboard-app = local.observability-agent-infra-name
+  metrics-endpoint-app  = local.observability-agent-infra-name
 }
 
 module "glance" {
@@ -164,6 +167,9 @@ module "glance" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.glance-config, {
     ceph-osd-replication-count     = var.ceph-osd-replication-count
     enable-telemetry-notifications = var.enable-telemetry
@@ -173,22 +179,25 @@ module "glance" {
 }
 
 module "keystone" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  source               = "./modules/openstack-api"
-  charm                = "keystone-k8s"
-  name                 = "keystone"
-  model-uuid           = juju_model.sunbeam.uuid
-  channel              = var.keystone-channel == null ? var.openstack-channel : var.keystone-channel
-  revision             = var.keystone-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["keystone"]
-  ingress-internal     = local.controller-internal-traefik-name
-  ingress-public       = local.controller-public-traefik-name
-  scale                = var.is-secondary-region ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  source                             = "./modules/openstack-api"
+  charm                              = "keystone-k8s"
+  name                               = "keystone"
+  model-uuid                         = juju_model.sunbeam.uuid
+  channel                            = var.keystone-channel == null ? var.openstack-channel : var.keystone-channel
+  revision                           = var.keystone-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["keystone"]
+  ingress-internal                   = local.controller-internal-traefik-name
+  ingress-public                     = local.controller-public-traefik-name
+  scale                              = var.is-secondary-region ? 0 : var.os-api-scale
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
   resource-configs = merge(var.keystone-config, {
     enable-telemetry-notifications = var.enable-telemetry
     region                         = var.region
@@ -218,6 +227,9 @@ module "nova" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.nova-config, {
     region = var.region
   })
@@ -274,6 +286,9 @@ module "horizon" {
   base                                = var.base
   mysql-router-base                   = var.mysql-router-base
   logging-app                         = local.observability-agent-name
+  mysql-router-logging-app            = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app  = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app   = local.observability-agent-infra-name
   resource-configs = merge(var.horizon-config, {
     plugins = jsonencode(var.horizon-plugins)
   })
@@ -300,6 +315,9 @@ module "neutron" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.neutron-config, {
     region = var.region
   })
@@ -325,6 +343,9 @@ module "placement" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.placement-config, {
     region = var.region
   })
@@ -357,7 +378,7 @@ resource "juju_integration" "traefik-internal-to-metrics-endpoint" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "metrics-endpoint"
   }
 }
@@ -372,7 +393,7 @@ resource "juju_integration" "traefik-internal-to-grafana-dashboard" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "grafana-dashboards-consumer"
   }
 }
@@ -387,7 +408,7 @@ resource "juju_integration" "traefik-internal-to-observability-agent-loki" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "receive-loki-logs"
   }
 }
@@ -422,7 +443,7 @@ resource "juju_integration" "traefik-public-to-metrics-endpoint" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "metrics-endpoint"
   }
 }
@@ -437,7 +458,7 @@ resource "juju_integration" "traefik-public-to-grafana-dashboard" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "grafana-dashboards-consumer"
   }
 }
@@ -452,7 +473,7 @@ resource "juju_integration" "traefik-public-to-observability-agent-loki" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "receive-loki-logs"
   }
 }
@@ -495,7 +516,7 @@ resource "juju_integration" "traefik-rgw-to-metrics-endpoint" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "metrics-endpoint"
   }
 }
@@ -510,7 +531,7 @@ resource "juju_integration" "traefik-rgw-to-grafana-dashboard" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "grafana-dashboards-consumer"
   }
 }
@@ -525,7 +546,7 @@ resource "juju_integration" "traefik-rgw-to-observability-agent-loki" {
   }
 
   application {
-    name     = juju_application.observability-agent[count.index].name
+    name     = juju_application.observability-agent-infra[count.index].name
     endpoint = "receive-loki-logs"
   }
 }
@@ -684,6 +705,9 @@ module "cinder" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.cinder-config, {
     region = var.region
   })
@@ -729,6 +753,51 @@ resource "juju_offer" "cinder-volume-database-offer" {
   model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.cinder-volume-mysql-router[count.index].name
   endpoints        = ["database"]
+}
+
+resource "juju_integration" "cinder-volume-mysql-router-to-logging" {
+  count      = (var.enable-cinder-volume && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.cinder-volume-mysql-router[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "cinder-volume-mysql-router-to-metrics-endpoint" {
+  count      = (var.enable-cinder-volume && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.cinder-volume-mysql-router[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "cinder-volume-mysql-router-to-grafana-dashboard" {
+  count      = (var.enable-cinder-volume && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.cinder-volume-mysql-router[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "grafana-dashboards-consumer"
+  }
 }
 
 locals {
@@ -782,6 +851,9 @@ module "heat" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.heat-config, {
     region = var.region
   })
@@ -839,6 +911,9 @@ module "aodh" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.aodh-config, {
     region = var.region
   })
@@ -865,6 +940,9 @@ module "gnocchi" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.gnocchi-config, {
     ceph-osd-replication-count = var.ceph-osd-replication-count
     region                     = var.region
@@ -1159,6 +1237,9 @@ module "octavia" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.octavia-config, {
     region = var.region
   })
@@ -1315,6 +1396,9 @@ module "designate" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.designate-config, {
     "nameservers" = var.nameservers
     region        = var.region
@@ -1369,6 +1453,51 @@ resource "juju_application" "vault" {
   units              = var.ha-scale
 }
 
+resource "juju_integration" "vault-to-logging" {
+  count      = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "vault-to-metrics-endpoint" {
+  count      = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "vault-to-grafana-dashboard" {
+  count      = (var.enable-vault && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.vault[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "grafana-dashboards-consumer"
+  }
+}
+
 module "barbican" {
   depends_on                            = [module.single-mysql, module.many-mysql]
   count                                 = var.enable-barbican ? 1 : 0
@@ -1393,6 +1522,9 @@ module "barbican" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.barbican-config, {
     region = var.region
   })
@@ -1422,73 +1554,82 @@ resource "juju_offer" "barbican-offer" {
 
 # Ironic feature.
 module "ironic" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  count                = var.enable-ironic ? 1 : 0
-  source               = "./modules/openstack-api"
-  charm                = "ironic-k8s"
-  name                 = "ironic"
-  model-uuid           = juju_model.sunbeam.uuid
-  channel              = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
-  revision             = var.ironic-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
-  keystone             = local.keystone-service-name
-  keystone-cacerts     = local.keystone-service-name
-  ingress-internal     = local.standard-internal-traefik-name
-  ingress-public       = local.standard-public-traefik-name
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  count                              = var.enable-ironic ? 1 : 0
+  source                             = "./modules/openstack-api"
+  charm                              = "ironic-k8s"
+  name                               = "ironic"
+  model-uuid                         = juju_model.sunbeam.uuid
+  channel                            = var.ironic-channel == null ? var.openstack-channel : var.ironic-channel
+  revision                           = var.ironic-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["ironic"]
+  keystone                           = local.keystone-service-name
+  keystone-cacerts                   = local.keystone-service-name
+  ingress-internal                   = local.standard-internal-traefik-name
+  ingress-public                     = local.standard-public-traefik-name
+  scale                              = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
   resource-configs = merge(var.ironic-config, {
     region = var.region
   })
 }
 
 module "nova-ironic" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  count                = var.enable-ironic ? 1 : 0
-  source               = "./modules/openstack-api"
-  charm                = "nova-ironic-k8s"
-  name                 = "nova-ironic"
-  model-uuid           = juju_model.sunbeam.uuid
-  channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
-  revision             = var.nova-ironic-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["nova"]
-  keystone-credentials = local.keystone-service-name
-  ingress-internal     = ""
-  ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : 1
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  count                              = var.enable-ironic ? 1 : 0
+  source                             = "./modules/openstack-api"
+  charm                              = "nova-ironic-k8s"
+  name                               = "nova-ironic"
+  model-uuid                         = juju_model.sunbeam.uuid
+  channel                            = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
+  revision                           = var.nova-ironic-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["nova"]
+  keystone-credentials               = local.keystone-service-name
+  ingress-internal                   = ""
+  ingress-public                     = ""
+  scale                              = var.is-region-controller ? 0 : 1
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
   resource-configs = merge(var.nova-ironic-config, {
   })
 }
 
 module "ironic-conductor" {
-  depends_on           = [module.single-mysql, module.many-mysql]
-  count                = var.enable-ironic ? 1 : 0
-  source               = "./modules/openstack-api"
-  charm                = "ironic-conductor-k8s"
-  name                 = "ironic-conductor"
-  model-uuid           = juju_model.sunbeam.uuid
-  trust                = true
-  channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
-  revision             = var.ironic-conductor-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
-  keystone-credentials = local.keystone-service-name
-  ingress-internal     = ""
-  ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  count                              = var.enable-ironic ? 1 : 0
+  source                             = "./modules/openstack-api"
+  charm                              = "ironic-conductor-k8s"
+  name                               = "ironic-conductor"
+  model-uuid                         = juju_model.sunbeam.uuid
+  trust                              = true
+  channel                            = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
+  revision                           = var.ironic-conductor-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["ironic"]
+  keystone-credentials               = local.keystone-service-name
+  ingress-internal                   = ""
+  ingress-public                     = ""
+  scale                              = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
   resource-configs = merge(var.ironic-conductor-config, {
   })
 }
@@ -1584,24 +1725,27 @@ resource "juju_integration" "glance-to-ceph-rgw" {
 }
 
 module "nova-ironic-shards" {
-  for_each             = var.enable-ironic ? var.ironic-compute-shards : {}
-  depends_on           = [module.single-mysql, module.many-mysql]
-  source               = "./modules/openstack-api"
-  charm                = "nova-ironic-k8s"
-  name                 = "nova-ironic-${each.key}"
-  model-uuid           = juju_model.sunbeam.uuid
-  channel              = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
-  revision             = var.nova-ironic-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["nova"]
-  keystone-credentials = local.keystone-service-name
-  ingress-internal     = ""
-  ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : 1
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
+  for_each                           = var.enable-ironic ? var.ironic-compute-shards : {}
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  source                             = "./modules/openstack-api"
+  charm                              = "nova-ironic-k8s"
+  name                               = "nova-ironic-${each.key}"
+  model-uuid                         = juju_model.sunbeam.uuid
+  channel                            = var.nova-ironic-channel == null ? var.openstack-channel : var.nova-ironic-channel
+  revision                           = var.nova-ironic-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["nova"]
+  keystone-credentials               = local.keystone-service-name
+  ingress-internal                   = ""
+  ingress-public                     = ""
+  scale                              = var.is-region-controller ? 0 : 1
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
   resource-configs = merge(var.nova-ironic-config, {
   })
 }
@@ -1637,26 +1781,29 @@ resource "juju_integration" "nova-ironic-shards-to-ingress-internal" {
 }
 
 module "ironic-conductor-groups" {
-  for_each             = var.enable-ironic ? var.ironic-conductor-groups : {}
-  depends_on           = [module.single-mysql, module.many-mysql]
-  source               = "./modules/openstack-api"
-  charm                = "ironic-conductor-k8s"
-  name                 = "ironic-conductor-${each.key}"
-  model-uuid           = juju_model.sunbeam.uuid
-  trust                = true
-  channel              = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
-  revision             = var.ironic-conductor-revision
-  rabbitmq             = module.rabbitmq.name
-  mysql                = local.mysql["ironic"]
-  keystone-credentials = local.keystone-service-name
-  ingress-internal     = ""
-  ingress-public       = ""
-  scale                = var.is-region-controller ? 0 : var.os-api-scale
-  mysql-router-channel = var.mysql-router-channel
-  base                 = var.base
-  mysql-router-base    = var.mysql-router-base
-  logging-app          = local.observability-agent-name
-  resource-configs     = merge(var.ironic-conductor-config, each.value)
+  for_each                           = var.enable-ironic ? var.ironic-conductor-groups : {}
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  source                             = "./modules/openstack-api"
+  charm                              = "ironic-conductor-k8s"
+  name                               = "ironic-conductor-${each.key}"
+  model-uuid                         = juju_model.sunbeam.uuid
+  trust                              = true
+  channel                            = var.ironic-conductor-channel == null ? var.openstack-channel : var.ironic-conductor-channel
+  revision                           = var.ironic-conductor-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["ironic"]
+  keystone-credentials               = local.keystone-service-name
+  ingress-internal                   = ""
+  ingress-public                     = ""
+  scale                              = var.is-region-controller ? 0 : var.os-api-scale
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
+  resource-configs                   = merge(var.ironic-conductor-config, each.value)
 }
 
 # juju integrate ironic-conductor-<group>:ceph-rgw-ready microceph:ceph-rgw-ready
@@ -1766,6 +1913,9 @@ module "magnum" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.magnum-config, {
     "cluster-user-trust" = "true"
     region               = var.region
@@ -1794,31 +1944,37 @@ module "manila" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.manila-config, {
     region = var.region
   })
 }
 
 module "manila-cephfs" {
-  depends_on                  = [module.single-mysql, module.many-mysql]
-  count                       = var.enable-manila-cephfs ? 1 : 0
-  source                      = "./modules/openstack-api"
-  charm                       = "manila-cephfs-k8s"
-  name                        = "manila-cephfs"
-  model-uuid                  = juju_model.sunbeam.uuid
-  channel                     = var.manila-cephfs-channel == null ? var.openstack-channel : var.manila-cephfs-channel
-  revision                    = var.manila-cephfs-revision
-  rabbitmq                    = module.rabbitmq.name
-  mysql                       = local.mysql["manila"]
-  keystone-credentials        = local.keystone-service-name
-  external-keystone-offer-url = var.external-keystone-offer-url
-  ingress-internal            = ""
-  ingress-public              = ""
-  scale                       = var.os-api-scale
-  mysql-router-channel        = var.mysql-router-channel
-  base                        = var.base
-  mysql-router-base           = var.mysql-router-base
-  logging-app                 = local.observability-agent-name
+  depends_on                         = [module.single-mysql, module.many-mysql]
+  count                              = var.enable-manila-cephfs ? 1 : 0
+  source                             = "./modules/openstack-api"
+  charm                              = "manila-cephfs-k8s"
+  name                               = "manila-cephfs"
+  model-uuid                         = juju_model.sunbeam.uuid
+  channel                            = var.manila-cephfs-channel == null ? var.openstack-channel : var.manila-cephfs-channel
+  revision                           = var.manila-cephfs-revision
+  rabbitmq                           = module.rabbitmq.name
+  mysql                              = local.mysql["manila"]
+  keystone-credentials               = local.keystone-service-name
+  external-keystone-offer-url        = var.external-keystone-offer-url
+  ingress-internal                   = ""
+  ingress-public                     = ""
+  scale                              = var.os-api-scale
+  mysql-router-channel               = var.mysql-router-channel
+  base                               = var.base
+  mysql-router-base                  = var.mysql-router-base
+  logging-app                        = local.observability-agent-name
+  mysql-router-logging-app           = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
 }
 
 resource "juju_integration" "manila-cephfs-to-manila" {
@@ -1891,6 +2047,51 @@ resource "juju_offer" "manila-data-database-offer" {
   model_uuid       = juju_model.sunbeam.uuid
   application_name = juju_application.manila-data-mysql-router[count.index].name
   endpoints        = ["database"]
+}
+
+resource "juju_integration" "manila-data-mysql-router-to-logging" {
+  count      = (var.enable-manila && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.manila-data-mysql-router[count.index].name
+    endpoint = "logging"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "receive-loki-logs"
+  }
+}
+
+resource "juju_integration" "manila-data-mysql-router-to-metrics-endpoint" {
+  count      = (var.enable-manila && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.manila-data-mysql-router[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "metrics-endpoint"
+  }
+}
+
+resource "juju_integration" "manila-data-mysql-router-to-grafana-dashboard" {
+  count      = (var.enable-manila && var.enable-observability) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.manila-data-mysql-router[count.index].name
+    endpoint = "grafana-dashboard"
+  }
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "grafana-dashboards-consumer"
+  }
 }
 
 resource "juju_application" "ldap-apps" {
@@ -2183,6 +2384,67 @@ resource "juju_integration" "observability-agent-to-cos-grafana" {
   }
 }
 
+# Separate collector for infrastructure-level charms (e.g. mysql, mysql-router, rabbitmq, vault) that expose COS endpoints.
+resource "juju_application" "observability-agent-infra" {
+  count      = var.enable-observability ? 1 : 0
+  name       = "opentelemetry-collector-infra"
+  model_uuid = juju_model.sunbeam.uuid
+  trust      = true
+
+  charm {
+    name     = "opentelemetry-collector-k8s"
+    base     = var.base
+    channel  = var.opentelemetry-collector-channel
+    revision = var.opentelemetry-collector-revision
+  }
+
+  units  = var.ha-scale
+  config = var.opentelemetry-collector-config
+}
+
+resource "juju_integration" "observability-agent-infra-to-receive-remote-write" {
+  count      = (var.enable-observability && var.receive-remote-write-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "send-remote-write"
+  }
+
+  application {
+    offer_url = var.receive-remote-write-offer-url
+    endpoint  = "receive-remote-write"
+  }
+}
+
+resource "juju_integration" "observability-agent-infra-to-logging" {
+  count      = (var.enable-observability && var.logging-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "send-loki-logs"
+  }
+
+  application {
+    offer_url = var.logging-offer-url
+  }
+}
+
+resource "juju_integration" "observability-agent-infra-to-cos-grafana" {
+  count      = (var.enable-observability && var.grafana-dashboard-offer-url != null) ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = juju_application.observability-agent-infra[count.index].name
+    endpoint = "grafana-dashboards-provider"
+  }
+
+  application {
+    offer_url = var.grafana-dashboard-offer-url
+  }
+}
+
 resource "juju_application" "images-sync" {
   count      = var.enable-images-sync ? 1 : 0
   name       = "images-sync"
@@ -2326,6 +2588,9 @@ module "watcher" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.watcher-config, {
     enable-telemetry-notifications = var.enable-telemetry
     region                         = var.region
@@ -2405,6 +2670,9 @@ module "masakari" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.masakari-config, {
     region = var.region
   })
@@ -2484,6 +2752,9 @@ module "cloudkitty" {
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
+  mysql-router-logging-app              = local.observability-agent-infra-name
+  mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
+  mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.cloudkitty-config, {
     region = var.region
   })

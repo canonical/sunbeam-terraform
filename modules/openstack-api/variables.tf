@@ -139,6 +139,24 @@ variable "logging-app" {
   default     = null
 }
 
+variable "mysql-router-logging-app" {
+  description = "Name of application providing logging endpoint for mysql-router instances"
+  type        = string
+  default     = null
+}
+
+variable "mysql-router-grafana-dashboard-app" {
+  description = "Name of application providing grafana-dashboard endpoint for mysql-router instances"
+  type        = string
+  default     = null
+}
+
+variable "mysql-router-metrics-endpoint-app" {
+  description = "Name of application providing metrics-endpoint endpoint for mysql-router instances"
+  type        = string
+  default     = null
+}
+
 variable "external-keystone-offer-url" {
   # In multi-region setups, the cluster connects to an external Keystone
   # service, in which case an offer URL must be provided.
