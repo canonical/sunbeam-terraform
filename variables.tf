@@ -1076,6 +1076,18 @@ variable "opentelemetry-collector-config" {
   description = "Operator config for opentelemetry-collector deployment"
 }
 
+variable "opentelemetry-collector-storage" {
+  description = "Storage directives for OpenTelemetry Collector deployment"
+  type        = map(string)
+  default     = {}
+}
+
+variable "opentelemetry-collector-storage-map" {
+  description = "Operator storage directives for specific OpenTelemetry Collector deployment (applied on top of opentelemetry-collector-storage for specific application)"
+  type        = map(map(string))
+  default     = {}
+}
+
 variable "enable-images-sync" {
   description = "Enable Images Sync"
   type        = bool
