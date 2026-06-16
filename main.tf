@@ -2354,6 +2354,9 @@ resource "juju_application" "observability-agent" {
 
   units  = var.ha-scale
   config = var.opentelemetry-collector-config
+  storage_directives = merge(
+    var.opentelemetry-collector-storage, lookup(var.opentelemetry-collector-storage-map, "opentelemetry-collector", {})
+  )
 }
 
 resource "juju_integration" "observability-agent-to-receive-remote-write" {
@@ -2415,6 +2418,9 @@ resource "juju_application" "observability-agent-infra" {
 
   units  = var.ha-scale
   config = var.opentelemetry-collector-config
+  storage_directives = merge(
+    var.opentelemetry-collector-storage, lookup(var.opentelemetry-collector-storage-map, "opentelemetry-collector-infra", {})
+  )
 }
 
 resource "juju_integration" "observability-agent-infra-to-receive-remote-write" {
