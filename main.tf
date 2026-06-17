@@ -24,7 +24,16 @@ terraform {
   }
 }
 
-provider "juju" {}
+provider "juju" {
+  offering_controllers = {
+    for name, config in var.remote-controllers : name => {
+      controller_addresses = config.controller_addresses
+      username             = config.username
+      password             = config.password
+      ca_certificate       = config.ca_certificate
+    }
+  }
+}
 
 locals {
   mysql-services = {
@@ -685,8 +694,10 @@ resource "juju_integration" "nova-to-placement" {
 }
 
 # juju integrate glance microceph
+# Skipped when external S3 image storage is enabled; Glance then uses the
+# glance-s3-integrator backend below instead of internal Ceph.
 resource "juju_integration" "glance-to-ceph" {
-  count      = length(data.juju_offer.microceph)
+  count      = var.enable-glance-s3-storage ? 0 : length(data.juju_offer.microceph)
   model_uuid = juju_model.sunbeam.uuid
 
   application {
@@ -711,6 +722,29 @@ resource "juju_integration" "horizon-to-glance-cors-origin" {
   application {
     name     = module.glance.name
     endpoint = "cors-origin"
+  }
+}
+
+# S3-compatible object storage backend for Glance images.
+data "juju_offer" "glance-s3" {
+  count               = var.enable-glance-s3-storage && var.glance-s3-integrator-offer-url != null ? 1 : 0
+  url                 = var.glance-s3-integrator-offer-url
+  offering_controller = var.glance-s3-integrator-offering-controller
+}
+
+# juju integrate glance:s3-credentials <s3-integrator>:s3-credentials
+resource "juju_integration" "glance-to-s3" {
+  count      = var.enable-glance-s3-storage && var.glance-s3-integrator-offer-url != null ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.glance.name
+    endpoint = "s3-credentials"
+  }
+
+  application {
+    offer_url           = data.juju_offer.glance-s3[count.index].url
+    offering_controller = var.glance-s3-integrator-offering-controller
   }
 }
 
@@ -980,8 +1014,10 @@ module "gnocchi" {
 }
 
 # juju integrate gnocchi microceph
+# Skipped when external S3 metrics storage is enabled; Gnocchi then uses the
+# s3-integrator backend below instead of internal Ceph.
 resource "juju_integration" "gnocchi-to-ceph" {
-  count      = var.enable-telemetry ? length(data.juju_offer.microceph) : 0
+  count      = var.enable-telemetry && !var.enable-telemetry-s3-storage ? length(data.juju_offer.microceph) : 0
   model_uuid = juju_model.sunbeam.uuid
   application {
     name     = module.gnocchi[count.index].name
@@ -989,6 +1025,29 @@ resource "juju_integration" "gnocchi-to-ceph" {
   }
   application {
     offer_url = data.juju_offer.microceph[count.index].url
+  }
+}
+
+# S3-compatible object storage backend for Gnocchi metrics.
+data "juju_offer" "gnocchi-s3" {
+  count               = var.enable-telemetry && var.enable-telemetry-s3-storage && var.telemetry-s3-integrator-offer-url != null ? 1 : 0
+  url                 = var.telemetry-s3-integrator-offer-url
+  offering_controller = var.telemetry-s3-integrator-offering-controller
+}
+
+# juju integrate gnocchi:s3-credentials <s3-integrator>:s3-credentials
+resource "juju_integration" "gnocchi-to-s3" {
+  count      = var.enable-telemetry && var.enable-telemetry-s3-storage && var.telemetry-s3-integrator-offer-url != null ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.gnocchi[count.index].name
+    endpoint = "s3-credentials"
+  }
+
+  application {
+    offer_url           = data.juju_offer.gnocchi-s3[count.index].url
+    offering_controller = var.telemetry-s3-integrator-offering-controller
   }
 }
 
@@ -1725,8 +1784,10 @@ resource "juju_integration" "ironic-to-neutron" {
 }
 
 # juju integrate ironic-conductor:ceph-rgw-ready microceph:ceph-rgw-ready
+# Skipped when Glance uses external S3 image storage; ironic-conductor then
+# pulls images from the same S3 backend instead of Ceph RGW (Swift).
 resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
-  count      = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  count      = var.enable-ironic && var.enable-ceph && !var.enable-glance-s3-storage ? length(data.juju_offer.microceph-ceph-rgw) : 0
   model_uuid = juju_model.sunbeam.uuid
 
   application {
@@ -1739,9 +1800,25 @@ resource "juju_integration" "ironic-conductor-to-ceph-rgw" {
   }
 }
 
+# juju integrate ironic-conductor:s3-credentials <s3-integrator>:s3-credentials
+resource "juju_integration" "ironic-conductor-to-s3" {
+  count      = var.enable-ironic && var.enable-glance-s3-storage && var.glance-s3-integrator-offer-url != null ? 1 : 0
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.ironic-conductor[count.index].name
+    endpoint = "s3-credentials"
+  }
+
+  application {
+    offer_url           = data.juju_offer.glance-s3[0].url
+    offering_controller = var.glance-s3-integrator-offering-controller
+  }
+}
+
 # juju integrate glance:ceph-rgw-ready microceph:ceph-rgw-ready
 resource "juju_integration" "glance-to-ceph-rgw" {
-  count      = var.enable-ironic && var.enable-ceph ? length(data.juju_offer.microceph-ceph-rgw) : 0
+  count      = var.enable-ironic && var.enable-ceph && !var.enable-glance-s3-storage ? length(data.juju_offer.microceph-ceph-rgw) : 0
   model_uuid = juju_model.sunbeam.uuid
 
   application {
@@ -1837,8 +1914,10 @@ module "ironic-conductor-groups" {
 }
 
 # juju integrate ironic-conductor-<group>:ceph-rgw-ready microceph:ceph-rgw-ready
+# Skipped when Glance uses external S3 image storage; the group conductors then
+# pull images from the same S3 backend instead of Ceph RGW (Swift).
 resource "juju_integration" "ironic-conductor-groups-to-ceph-rgw" {
-  for_each   = var.enable-ironic ? var.ironic-conductor-groups : {}
+  for_each   = var.enable-ironic && !var.enable-glance-s3-storage ? var.ironic-conductor-groups : {}
   model_uuid = juju_model.sunbeam.uuid
 
   application {
@@ -1848,6 +1927,22 @@ resource "juju_integration" "ironic-conductor-groups-to-ceph-rgw" {
 
   application {
     offer_url = data.juju_offer.microceph-ceph-rgw[0].url
+  }
+}
+
+# juju integrate ironic-conductor-<group>:s3-credentials <s3-integrator>:s3-credentials
+resource "juju_integration" "ironic-conductor-groups-to-s3" {
+  for_each   = var.enable-ironic && var.enable-glance-s3-storage && var.glance-s3-integrator-offer-url != null ? var.ironic-conductor-groups : {}
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.ironic-conductor-groups[each.key].name
+    endpoint = "s3-credentials"
+  }
+
+  application {
+    offer_url           = data.juju_offer.glance-s3[0].url
+    offering_controller = var.glance-s3-integrator-offering-controller
   }
 }
 

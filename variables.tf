@@ -266,6 +266,24 @@ variable "glance-storage" {
   default     = {}
 }
 
+variable "enable-glance-s3-storage" {
+  description = "Use an external S3-compatible object store for Glance image storage instead of internal Ceph"
+  type        = bool
+  default     = false
+}
+
+variable "glance-s3-integrator-offer-url" {
+  description = "Juju offer URL of an externally deployed s3-integrator application for Glance image storage"
+  type        = string
+  default     = null
+}
+variable "glance-s3-integrator-offering-controller" {
+  description = "Name of the Juju controller hosting the s3-integrator offer"
+  type        = string
+  default     = null
+}
+
+
 variable "nova-channel" {
   description = "Operator channel for Nova deployment"
   type        = string
@@ -549,8 +567,20 @@ variable "gnocchi-config" {
   default     = {}
 }
 
-variable "metrics-storage-offer-url" {
-  description = "Offer URL for S3-compatible metrics storage backend"
+variable "enable-telemetry-s3-storage" {
+  description = "Use an external S3-compatible object store for Gnocchi metrics storage instead of internal Ceph"
+  type        = bool
+  default     = false
+}
+
+variable "telemetry-s3-integrator-offer-url" {
+  description = "Juju offer URL of an externally deployed s3-integrator application for Gnocchi metrics storage"
+  type        = string
+  default     = null
+}
+
+variable "telemetry-s3-integrator-offering-controller" {
+  description = "Name of the Juju controller hosting the gnocchi s3-integrator offer"
   type        = string
   default     = null
 }
@@ -1294,4 +1324,16 @@ variable "cloudkitty-config" {
   description = "Operator config for Cloudkitty deployment"
   type        = map(string)
   default     = {}
+}
+
+
+variable "remote-controllers" {
+  description = "External Juju controllers used in cross-controller offers"
+  type = map(object({
+    controller_addresses = string
+    username             = string
+    password             = string
+    ca_certificate       = string
+  }))
+  default = {}
 }
