@@ -16,7 +16,7 @@
 variable "openstack-channel" {
   description = "Operator channel for OpenStack deployment"
   type        = string
-  default     = "2024.1/stable"
+  default     = "2025.1/stable"
 }
 
 variable "mysql-channel" {
@@ -959,7 +959,7 @@ variable "manila-cephfs-config" {
 variable "ldap-channel" {
   description = "Operator channel for Keystone LDAP deployment"
   type        = string
-  default     = "2024.1/stable"
+  default     = "2025.1/stable"
 }
 
 variable "ldap-revision" {
