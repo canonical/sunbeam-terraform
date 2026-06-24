@@ -684,6 +684,21 @@ resource "juju_integration" "glance-to-ceph" {
   }
 }
 
+# juju integrate horizon glance:cors-origin
+resource "juju_integration" "horizon-to-glance-cors-origin" {
+  model_uuid = juju_model.sunbeam.uuid
+
+  application {
+    name     = module.horizon.name
+    endpoint = "cors-origin"
+  }
+
+  application {
+    name     = module.glance.name
+    endpoint = "cors-origin"
+  }
+}
+
 module "cinder" {
   depends_on                            = [module.single-mysql, module.many-mysql]
   source                                = "./modules/openstack-api"
