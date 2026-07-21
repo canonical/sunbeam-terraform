@@ -170,54 +170,6 @@ variable "certificate-authority-config" {
   default     = {}
 }
 
-variable "ovn-channel" {
-  description = "Operator channel for OVN deployment"
-  type        = string
-  default     = "26.03/stable"
-}
-
-variable "ovn-central-channel" {
-  description = "Operator channel for OVN Central deployment"
-  type        = string
-  default     = null
-}
-
-variable "ovn-central-revision" {
-  description = "Operator channel revision for OVN Central deployment"
-  type        = number
-  default     = null
-}
-
-variable "ovn-central-config" {
-  description = "Operator config for OVN Central deployment"
-  type        = map(string)
-  default     = {}
-}
-
-variable "ovn-central-storage" {
-  description = "Operator storage directives for OVN Central deployment"
-  type        = map(string)
-  default     = {}
-}
-
-variable "ovn-relay-channel" {
-  description = "Operator channel for OVN Relay deployment"
-  type        = string
-  default     = null
-}
-
-variable "ovn-relay-revision" {
-  description = "Operator channel revision for OVN Relay deployment"
-  type        = number
-  default     = null
-}
-
-variable "ovn-relay-config" {
-  description = "Operator config for OVN Relay deployment"
-  type        = map(string)
-  default     = {}
-}
-
 variable "keystone-channel" {
   description = "Operator channel for Keystone deployment"
   type        = string
@@ -1243,7 +1195,6 @@ variable "external-keystone-ops-offer-url" {
 variable "external-ovsdb-cms-offer-url" {
   description = "URL of the external ovsdb-cms offer"
   type        = string
-  default     = null
 }
 
 variable "external-cert-distributor-offer-url" {
