@@ -40,11 +40,6 @@ output "rabbitmq-offer-url" {
   value       = module.rabbitmq.rabbitmq-offer-url
 }
 
-output "ovn-relay-offer-url" {
-  description = "URL of the ovn relay offer"
-  value       = try(one(module.ovn[0].ovn-relay-offer-url[*]), null)
-}
-
 output "ceilometer-offer-url" {
   description = "URL of the ceilometer offer"
   value       = one(juju_offer.ceilometer-offer[*].url)
