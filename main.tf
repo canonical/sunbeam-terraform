@@ -724,7 +724,8 @@ module "cinder" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.cinder-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
@@ -1990,6 +1991,9 @@ module "manila-cephfs" {
   mysql-router-logging-app           = local.observability-agent-infra-name
   mysql-router-grafana-dashboard-app = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app  = local.observability-agent-infra-name
+  resource-configs = merge(var.manila-cephfs-config, {
+    enable-telemetry-notifications = var.enable-telemetry
+  })
 }
 
 resource "juju_integration" "manila-cephfs-to-manila" {
