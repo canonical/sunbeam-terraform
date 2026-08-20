@@ -230,7 +230,8 @@ module "nova" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.nova-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
@@ -333,7 +334,8 @@ module "neutron" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.neutron-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
@@ -846,7 +848,8 @@ module "heat" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.heat-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
@@ -1923,7 +1926,8 @@ module "manila" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.manila-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
