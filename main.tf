@@ -699,7 +699,8 @@ module "cinder" {
   mysql-router-grafana-dashboard-app    = local.observability-agent-infra-name
   mysql-router-metrics-endpoint-app     = local.observability-agent-infra-name
   resource-configs = merge(var.cinder-config, {
-    region = var.region
+    enable-telemetry-notifications = var.enable-telemetry
+    region                         = var.region
   })
 }
 
