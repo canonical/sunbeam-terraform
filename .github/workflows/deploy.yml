@@ -11,27 +11,63 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup operator environment
-        uses: charmed-kubernetes/actions-operator@main
-        with:
-          provider: microk8s
-          channel: 1.28-strict/stable
-          juju-channel: 3.6/stable
-          microk8s-addons: hostpath-storage dns rbac metallb:10.64.140.40-10.64.140.49
-          bootstrap-options: --config caas-image-repo=ghcr.io/juju
+      - name: Setup Canonical K8s
+        run: |
+          if [ -n "$DOCKERHUB_MIRROR" ]; then
+            MIRROR_CONFIG=/etc/containerd/hosts.d/docker.io
+            sudo mkdir -p ${MIRROR_CONFIG}
+            sudo chown $USER ${MIRROR_CONFIG}
+            cat <<EOF > ${MIRROR_CONFIG}/hosts.toml
+          [host."$DOCKERHUB_MIRROR"]
+          capabilities = ["pull", "resolve"]
+          EOF
+          fi
+
+          sudo apt-get remove -y docker.io containerd
+          sudo rm -rf /run/containerd
+          sudo iptables -P FORWARD ACCEPT
+          sudo snap install --classic concierge
+
+          cat > /tmp/concierge-k8s.yaml <<EOF
+          juju:
+            channel: 3.6/stable
+            extra-bootstrap-args: --config bootstrap-timeout=1800 --config caas-image-repo=ghcr.io/juju
+            model-defaults:
+              test-mode: "true"
+              automatically-retry-hooks: "true"
+          providers:
+            k8s:
+              enable: true
+              bootstrap: true
+              channel: 1.32-classic/stable
+              bootstrap-constraints:
+                root-disk: "10G"
+              features:
+                load-balancer:
+                  l2-mode: "true"
+                  cidrs: "10.64.140.40-10.64.140.49"
+                local-storage: {}
+                network: {}
+          EOF
+
+          sudo concierge --trace prepare -c /tmp/concierge-k8s.yaml
+          sudo k8s status --wait-ready --timeout 5m
+          kubectl config current-context
+          juju controllers
+          juju models
       - name: Install dependencies
         run: |
           sudo snap install --classic terraform
           sudo snap install --classic juju-wait
       - name: Apply terraform
         run: |
-          echo '{"credential": "microk8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github.", "enable-watcher": true, "enable-consul-management": true, "enable-consul-tenant": true, "enable-consul-storage": true, "enable-ironic": true, "enable-manila": true, "enable-manila-cephfs": true, "enable-masakari": true, "enable-cloudkitty": true, "mysql-storage": { "database": "12G" }, "keystone-storage": { "fernet-keys": "6M", "credential-keys": "8M" } }' > terraform.tfvars.json
+          echo '{"cloud": "k8s", "cloud-region": null, "credential": "k8s", "enable-vault": true, "enable-barbican": true, "enable-designate": true, "nameservers": "testing.github.", "enable-watcher": true, "enable-consul-management": true, "enable-consul-tenant": true, "enable-consul-storage": true, "enable-ironic": true, "enable-manila": true, "enable-manila-cephfs": true, "enable-masakari": true, "enable-cloudkitty": true, "mysql-storage": { "database": "12G" }, "keystone-storage": { "fernet-keys": "6M", "credential-keys": "8M" } }' > terraform.tfvars.json
           terraform init
           terraform apply -auto-approve -var-file=channels/edge.tfvars
-          juju model-config -m openstack automatically-retry-hooks=true
           juju-wait -vw -m openstack -t 3600 -x cinder -x vault -x barbican -x cloudkitty -x ironic-conductor -x manila -x manila-cephfs -x neutron-baremetal-switch-config -x neutron-generic-switch-config -r 3
       - name: Collect juju status
         if: always()
         run: |
+          sudo k8s status --output-format yaml
           juju status -m openstack
           juju debug-log -m openstack --replay
