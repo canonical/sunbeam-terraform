@@ -644,6 +644,22 @@ resource "juju_integration" "nova-to-placement" {
   }
 }
 
+# juju integrate neutron placement
+resource "juju_integration" "neutron-to-placement" {
+  model_uuid = juju_model.sunbeam.uuid
+  count      = var.is-region-controller ? 0 : 1
+
+  application {
+    name     = module.neutron.name
+    endpoint = "placement"
+  }
+
+  application {
+    name     = module.placement.name
+    endpoint = "placement"
+  }
+}
+
 # juju integrate glance microceph
 resource "juju_integration" "glance-to-ceph" {
   count      = length(data.juju_offer.microceph)
