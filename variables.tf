@@ -84,13 +84,13 @@ variable "mysql-router-base" {
 variable "traefik-channel" {
   description = "Operator channel for Traefik deployment"
   type        = string
-  default     = "1.0/stable"
+  default     = "latest/stable"
 }
 
 variable "traefik-base" {
   description = "Operator base for Traefik deployment"
   type        = string
-  default     = "ubuntu@20.04"
+  default     = "ubuntu@26.04"
 }
 
 variable "traefik-revision" {
