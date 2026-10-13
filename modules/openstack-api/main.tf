@@ -49,9 +49,10 @@ resource "juju_application" "mysql-router" {
   model_uuid = var.model-uuid
 
   charm {
-    name    = "mysql-router-k8s"
-    channel = var.mysql-router-channel
-    base    = var.mysql-router-base
+    name     = "mysql-router-k8s"
+    channel  = var.mysql-router-channel
+    revision = var.mysql-router-revision
+    base     = var.mysql-router-base
   }
 
   units = var.scale
@@ -279,9 +280,10 @@ resource "juju_application" "nova-api-mysql-router" {
   trust      = true
 
   charm {
-    name    = "mysql-router-k8s"
-    channel = var.mysql-router-channel
-    base    = var.mysql-router-base
+    name     = "mysql-router-k8s"
+    channel  = var.mysql-router-channel
+    revision = var.mysql-router-revision
+    base     = var.mysql-router-base
   }
 
   units = var.scale
@@ -324,9 +326,10 @@ resource "juju_application" "nova-cell-mysql-router" {
   trust      = true
 
   charm {
-    name    = "mysql-router-k8s"
-    channel = var.mysql-router-channel
-    base    = var.mysql-router-base
+    name     = "mysql-router-k8s"
+    channel  = var.mysql-router-channel
+    revision = var.mysql-router-revision
+    base     = var.mysql-router-base
   }
 
   units = var.scale

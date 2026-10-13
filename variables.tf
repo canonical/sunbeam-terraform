@@ -63,6 +63,12 @@ variable "mysql-router-channel" {
   type        = string
 }
 
+variable "mysql-router-revision" {
+  description = "Operator channel revision for MySQL router deployment"
+  type        = number
+  default     = null
+}
+
 variable "base" {
   description = "Default operator base"
   type        = string
