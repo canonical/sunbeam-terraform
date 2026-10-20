@@ -16,7 +16,7 @@
 variable "openstack-channel" {
   description = "Operator channel for OpenStack deployment"
   type        = string
-  default     = "2026.1/stable"
+  default     = "2026.2/beta"
 }
 
 variable "mysql-channel" {
@@ -72,7 +72,7 @@ variable "mysql-router-revision" {
 variable "base" {
   description = "Default operator base"
   type        = string
-  default     = "ubuntu@24.04"
+  default     = "ubuntu@26.04"
 }
 
 variable "mysql-base" {
@@ -917,7 +917,7 @@ variable "manila-cephfs-config" {
 variable "ldap-channel" {
   description = "Operator channel for Keystone LDAP deployment"
   type        = string
-  default     = "2026.1/stable"
+  default     = "2026.2/beta"
 }
 
 variable "ldap-revision" {
@@ -1238,7 +1238,7 @@ variable "enable-cloudkitty" {
 variable "cloudkitty-channel" {
   description = "Operator channel for Cloudkitty deployment"
   type        = string
-  default     = "2026.1/stable"
+  default     = "2026.2/beta"
 }
 
 variable "cloudkitty-revision" {
