@@ -45,7 +45,7 @@ locals {
     designate  = var.many-mysql && var.enable-designate ? { "configs" : lookup(var.mysql-config-map, "designate", {}), "storages" : lookup(var.mysql-storage-map, "designate", {}) } : null,
     barbican   = var.many-mysql && var.enable-barbican ? { "configs" : lookup(var.mysql-config-map, "barbican", {}), "storages" : lookup(var.mysql-storage-map, "barbican", {}) } : null,
     watcher    = var.many-mysql && var.enable-watcher ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
-    masakari   = var.many-mysql && var.enable-masakari ? { "configs" : lookup(var.mysql-config-map, "watcher", {}), "storages" : lookup(var.mysql-storage-map, "watcher", {}) } : null,
+    masakari   = var.many-mysql && var.enable-masakari ? { "configs" : lookup(var.mysql-config-map, "masakari", {}), "storages" : lookup(var.mysql-storage-map, "masakari", {}) } : null,
     cloudkitty = var.many-mysql && var.enable-cloudkitty ? { "configs" : lookup(var.mysql-config-map, "cloudkitty", {}), "storages" : lookup(var.mysql-storage-map, "cloudkitty", {}) } : null,
   }
   single-mysql = "mysql"
