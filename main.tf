@@ -580,7 +580,7 @@ resource "juju_application" "certificate-authority" {
     name     = "self-signed-certificates"
     channel  = var.certificate-authority-channel
     revision = var.certificate-authority-revision
-    base     = var.base
+    base     = "ubuntu@24.04" # No 26.04 revision yet.
   }
 
   config = merge(var.certificate-authority-config, {
@@ -1433,7 +1433,7 @@ resource "juju_application" "vault" {
     name     = "vault-k8s"
     channel  = var.vault-channel
     revision = var.vault-revision
-    base     = var.base
+    base     = "ubuntu@24.04" # No 26.04 revision yet.
   }
 
   config             = var.vault-config
@@ -2147,7 +2147,7 @@ resource "juju_application" "manual-tls-certificates" {
     name     = "manual-tls-certificates"
     channel  = var.manual-tls-certificates-channel
     revision = var.manual-tls-certificates-revision
-    base     = var.base
+    base     = "ubuntu@24.04" # No 26.04 revision yet.
   }
 
   units  = 1 # does not scale
@@ -2330,7 +2330,7 @@ resource "juju_application" "observability-agent" {
 
   charm {
     name     = "opentelemetry-collector-k8s"
-    base     = var.base
+    base     = "ubuntu@24.04" # 2/candidate has no 26.04 revision yet.
     channel  = var.opentelemetry-collector-channel
     revision = var.opentelemetry-collector-revision
   }
@@ -2394,7 +2394,7 @@ resource "juju_application" "observability-agent-infra" {
 
   charm {
     name     = "opentelemetry-collector-k8s"
-    base     = var.base
+    base     = "ubuntu@24.04" # 2/candidate has no 26.04 revision yet.
     channel  = var.opentelemetry-collector-channel
     revision = var.opentelemetry-collector-revision
   }
