@@ -164,6 +164,7 @@ module "glance" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : (var.enable-ceph ? var.os-api-scale : 1)
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -192,6 +193,7 @@ module "keystone" {
   ingress-public                     = local.controller-public-traefik-name
   scale                              = var.is-secondary-region ? 0 : var.os-api-scale
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -224,6 +226,7 @@ module "nova" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -283,6 +286,7 @@ module "horizon" {
   ingress-public                      = local.controller-public-traefik-name
   scale                               = var.is-secondary-region ? 0 : var.os-api-scale
   mysql-router-channel                = var.mysql-router-channel
+  mysql-router-revision               = var.mysql-router-revision
   base                                = var.base
   mysql-router-base                   = var.mysql-router-base
   logging-app                         = local.observability-agent-name
@@ -312,6 +316,7 @@ module "neutron" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -340,6 +345,7 @@ module "placement" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -717,6 +723,7 @@ module "cinder" {
   ingress-public                        = local.standard-public-traefik-name
   scale                                 = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -737,9 +744,10 @@ resource "juju_application" "cinder-volume-mysql-router" {
   model_uuid = juju_model.sunbeam.uuid
 
   charm {
-    name    = "mysql-router-k8s"
-    channel = var.mysql-router-channel
-    base    = var.mysql-router-base
+    name     = "mysql-router-k8s"
+    channel  = var.mysql-router-channel
+    revision = var.mysql-router-revision
+    base     = var.mysql-router-base
   }
 
   units = var.ha-scale
@@ -864,6 +872,7 @@ module "heat" {
   ingress-public                        = ""
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -924,6 +933,7 @@ module "aodh" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -953,6 +963,7 @@ module "gnocchi" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1250,6 +1261,7 @@ module "octavia" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1409,6 +1421,7 @@ module "designate" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1535,6 +1548,7 @@ module "barbican" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1586,6 +1600,7 @@ module "ironic" {
   ingress-public                     = local.standard-public-traefik-name
   scale                              = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -1613,6 +1628,7 @@ module "nova-ironic" {
   ingress-public                     = ""
   scale                              = var.is-region-controller ? 0 : 1
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -1640,6 +1656,7 @@ module "ironic-conductor" {
   ingress-public                     = ""
   scale                              = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -1756,6 +1773,7 @@ module "nova-ironic-shards" {
   ingress-public                     = ""
   scale                              = var.is-region-controller ? 0 : 1
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -1813,6 +1831,7 @@ module "ironic-conductor-groups" {
   ingress-public                     = ""
   scale                              = var.is-region-controller ? 0 : var.os-api-scale
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -1926,6 +1945,7 @@ module "magnum" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1957,6 +1977,7 @@ module "manila" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -1985,6 +2006,7 @@ module "manila-cephfs" {
   ingress-public                     = ""
   scale                              = var.os-api-scale
   mysql-router-channel               = var.mysql-router-channel
+  mysql-router-revision              = var.mysql-router-revision
   base                               = var.base
   mysql-router-base                  = var.mysql-router-base
   logging-app                        = local.observability-agent-name
@@ -2034,9 +2056,10 @@ resource "juju_application" "manila-data-mysql-router" {
   model_uuid = juju_model.sunbeam.uuid
 
   charm {
-    name    = "mysql-router-k8s"
-    channel = var.mysql-router-channel
-    base    = var.mysql-router-base
+    name     = "mysql-router-k8s"
+    channel  = var.mysql-router-channel
+    revision = var.mysql-router-revision
+    base     = var.mysql-router-base
   }
 
   units = var.ha-scale
@@ -2610,6 +2633,7 @@ module "watcher" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -2692,6 +2716,7 @@ module "masakari" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
@@ -2774,6 +2799,7 @@ module "cloudkitty" {
   ingress-public                        = juju_application.traefik-public.name
   scale                                 = var.os-api-scale
   mysql-router-channel                  = var.mysql-router-channel
+  mysql-router-revision                 = var.mysql-router-revision
   base                                  = var.base
   mysql-router-base                     = var.mysql-router-base
   logging-app                           = local.observability-agent-name
